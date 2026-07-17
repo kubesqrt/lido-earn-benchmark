@@ -62,6 +62,8 @@
   .flag.crit { color: #ff9d9d; background: rgba(224,82,82,0.14); border: 1px solid rgba(224,82,82,0.25); }
   .flag.warn { color: #ffd47e; background: rgba(250,178,25,0.10); border: 1px solid rgba(250,178,25,0.22); }
   .flag.ok   { color: #7fd794; background: rgba(47,181,77,0.10); border: 1px solid rgba(47,181,77,0.22); }
+  .yld { border-bottom: 1px dotted var(--muted); cursor: help; color: var(--ink); }
+  .yld.neg { color: #ff9d9d; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid2 > * { min-width: 0; }
   @media (max-width: 880px) { .grid2 { grid-template-columns: 1fr; } }
@@ -113,7 +115,7 @@
   </div>
 
   <h2>Where Lido Earn's money is right now</h2>
-  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
+  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield / carry</b> is priced from live market rates: direct positions show the underlying's current rate; levered loops show <b>carry per turn of leverage</b> (net APY = s&middot;L &minus; b&middot;(L&minus;1); on-chain leverage isn't published &mdash; hover for the formula inputs). Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
   <div class="grid2">
     <div class="card">
       <div class="cardhead" id="earnEthHead">EarnETH <small>loading&hellip;</small></div>
@@ -183,6 +185,22 @@ const SERIES = ["var(--accent)", "var(--aqua)", "var(--yellow)", "var(--violet)"
 const BASELINE_COL = "var(--muted)";
 const SLOTS = ["#3987e5","#199e70","#c98500","#9085e9","#e66767","#d55181","#d95926","#5f9ec7"];
 const SEVENSEAS = { eth: "0xf0bb20865277aBd641a307eCe5Ee04E79073416C", usd: "0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C" };
+// auxiliary rate pools (not shown as table rows — used to price Earn's positions)
+const AUX_POOLS = {
+  "rsETH (Kelp)":     "33c732f6-a78d-41da-af5b-ccd9fa5e52d5",
+  "Maple syrupUSDT":  "8edfdf02-cdbb-43f7-bca6-954e5fe56813",
+  "SparkLend USDC":   "65ce8276-b4d9-41ba-9f6f-21fc374cf9bc",
+};
+// borrow-rate legs (matched against yields.llama.fi/lendBorrow by pool UUID)
+const BORROW = {
+  aaveWETH:    "e880e828-ca59-4ec6-8d4f-27182a4dc23d",
+  sparkWETH:   "24195b31-d749-445f-bf9e-b65aa025ebdd",
+  aaveUSDT:    "f981a304-bb6c-45b8-b0c5-fd2f515ad23a",
+  usdt0Plasma: "e338c687-a5d8-4abf-bc04-127990811b0a",
+  usdt0Mantle: "47da0cdd-7b1d-4927-9545-20b53b73afa8",
+  usdeEth:     "21e1ac8a-b3aa-4576-9506-0b40137721a0",
+  usdePlasma:  "42eaf290-24c3-4ce0-82ab-c1276444871b",
+};
 
 // ---------- helpers ----------
 const $ = id => document.getElementById(id);
@@ -204,7 +222,7 @@ function setStatus(name, state, extra) {
   statusEl.innerHTML = Object.entries(sources).map(([n, s]) =>
     `<span class="${s.state}">${n}${s.extra ? " · " + s.extra : ""}</span>`).join("");
 }
-["DefiLlama","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas"].forEach(n => setStatus(n, "wait"));
+["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas"].forEach(n => setStatus(n, "wait"));
 async function j(url) { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
 
 // ---------- charts ----------
@@ -340,7 +358,33 @@ function flattenAllocations(data) {
   if (rest > 0.05) top.push({ label: "Other", pct: rest, chain: "ethereum", cat: "other" });
   return top;
 }
-function renderAlloc(stackId, tableId, rows, tvlUsd, vault) {
+// per-position yield: direct positions → live market rate of the underlying;
+// levered loops → carry per turn of leverage (net APY = s·L − b·(L−1); leverage isn't public)
+function yieldEst(row, vault, ctx) {
+  const L = row.label, ch = (row.chain || "ethereum").toLowerCase();
+  const b = k => ctx.borrow[BORROW[k]];
+  const rate = (v, tip) => v == null ? null : { text: v.toFixed(2) + "%", tip };
+  const spread = (earn, earnLbl, cost, costLbl) => (earn == null || cost == null) ? null :
+    { text: (earn - cost >= 0 ? "+" : "") + (earn - cost).toFixed(2) + "pp/turn", neg: earn - cost < 0,
+      tip: `${earnLbl} ${earn.toFixed(2)}% − ${costLbl} ${cost.toFixed(2)}% · net APY = s·L − b·(L−1)` };
+  if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
+    ? spread(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)")
+    : spread(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)");
+  if (/rseth\/eth/i.test(L)) return spread(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)");
+  if (/wsteth\/usd/i.test(L)) return spread(ctx.earnUsd, "USD yield (≈earnUSD)", b("aaveUSDT"), "USDT borrow est.");
+  if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (14d TW)");
+  if (/syrupusdt\/usdt0/i.test(L)) return spread(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`);
+  if (/levered ethena/i.test(L)) return spread(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""));
+  if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
+  if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
+  if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
+  if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live");
+  if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live");
+  if (/morpho wsteth\/weth/i.test(L)) return null;
+  if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return { text: "0%", tip: "unallocated — earns nothing" };
+  return null;
+}
+function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stack = $(stackId);
   stack.innerHTML = rows.map((r, i) =>
     `<div data-i="${i}" style="flex:${r.pct};background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></div>`).join("");
@@ -349,31 +393,40 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault) {
       showTT(e, `<b>${r.label}</b>${r.pct.toFixed(1)}% · ${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : ""}${r.chain && r.chain !== "ethereum" ? " · " + r.chain : ""}`); });
     seg.addEventListener("mouseleave", hideTT);
   });
-  $(tableId).innerHTML = `<table><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th>Flag</th></tr>` +
-    rows.map((r, i) => { const f = flagFor(r, vault);
+  $(tableId).innerHTML = `<table><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Flag</th></tr>` +
+    rows.map((r, i) => { const f = flagFor(r, vault); const y = ctx ? yieldEst(r, vault, ctx) : null;
       return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${r.label}</td>` +
       `<td class="num">${r.pct.toFixed(1)}%</td><td class="num">${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : "—"}</td>` +
+      `<td class="num">${y ? `<span class="yld${y.neg ? " neg" : ""}" data-tip="${y.tip}">${y.text}</span>` : "—"}</td>` +
       `<td>${f ? `<span class="flag ${f[0]}">${f[1]}</span>` : ""}</td></tr>`; }).join("") + "</table>";
+  $(tableId).querySelectorAll(".yld").forEach(el => {
+    el.addEventListener("mousemove", e => showTT(e, `<b>${el.textContent}</b>${el.dataset.tip}`));
+    el.addEventListener("mouseleave", hideTT);
+  });
 }
 
 // ---------- main ----------
 (async () => {
   $("asof").textContent = "fetched " + new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-  // per-pool histories → stats computed client-side (fast: ~20 small parallel calls, no 10MB dump)
-  const names = Object.keys(POOL_IDS);
+  // per-pool histories → stats computed client-side (fast: small parallel calls, no 10MB dump)
+  const fetchList = [...Object.entries(POOL_IDS).map(([n, c]) => [n, c.id]), ...Object.entries(AUX_POOLS)];
   let done = 0;
-  const pStats = Promise.all(names.map(n =>
-    j("https://yields.llama.fi/chart/" + POOL_IDS[n].id)
-      .then(r => { done++; setStatus("DefiLlama", "wait", done + "/" + names.length);
+  const pStats = Promise.all(fetchList.map(([n, id]) =>
+    j("https://yields.llama.fi/chart/" + id)
+      .then(r => { done++; setStatus("DefiLlama", "wait", done + "/" + fetchList.length);
         const pts = r.data.map(p => ({ d: p.timestamp.slice(0, 10), v: +p.apy, tvl: +p.tvlUsd }));
         return [n, pts]; })
       .catch(() => { done++; return [n, null]; })
   )).then(entries => {
     const ok = entries.filter(e => e[1]).length;
-    setStatus("DefiLlama", ok ? "ok" : "err", ok + "/" + names.length + " pools");
+    setStatus("DefiLlama", ok ? "ok" : "err", ok + "/" + fetchList.length + " pools");
     return Object.fromEntries(entries);
   });
+  const pBorrow = j("https://yields.llama.fi/lendBorrow")
+    .then(list => { const m = {}; list.forEach(e => { if (e.pool) m[e.pool] = e.apyBaseBorrow != null ? +e.apyBaseBorrow : null; });
+      setStatus("Borrow rates", "ok", Object.keys(BORROW).filter(k => m[BORROW[k]] != null).length + "/" + Object.keys(BORROW).length + " legs"); return m; })
+    .catch(() => { setStatus("Borrow rates", "err"); return {}; });
   const pMellow = key => Promise.all([
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/data`),
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy`),
@@ -386,7 +439,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault) {
     j("https://api.sevenseas.capital/etherfi/ethereum/performance/" + addr).then(r => [k, r]).catch(() => [k, null])
   )).then(entries => { const ok = entries.filter(e => e[1]).length; setStatus("Seven Seas", ok ? "ok" : "err", ok + "/2"); return Object.fromEntries(entries); });
 
-  const [hist, mEth, mUsd, stethApr, seven] = await Promise.all([pStats, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven]);
+  const [hist, borrowMap, mEth, mUsd, stethApr, seven] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven]);
 
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
     const last = pts[pts.length - 1], last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
@@ -436,16 +489,22 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault) {
     TREND.usd.map((n, i) => ({ label: n, col: i === TREND.usd.length - 1 ? BASELINE_COL : SERIES[i], pts: trendPts(n) })),
     usdApy != null ? { v: usdApy, label: `EarnUSD ${usdApy.toFixed(1)}%` } : null);
 
-  // Earn allocations
+  // Earn allocations — ctx prices each position from live market rates
+  const auxApy = n => { const s = stat(n); return s ? s.apy : null; };
+  const ctx = {
+    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy,
+    rsETH: auxApy("rsETH (Kelp)"), syrupUSDT: auxApy("Maple syrupUSDT"), sparkUSDC: auxApy("SparkLend USDC"),
+    syrupUSDC: auxApy("Maple syrupUSDC"), sUSDe: auxApy("Ethena sUSDe"), sentora: auxApy("Sentora PYUSD Main"),
+  };
   if (mEth) {
     $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnEthSpark"), (mEth.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    renderAlloc("earnEthStack", "earnEthAlloc", flattenAllocations(mEth.d), ethTvl, "eth");
+    renderAlloc("earnEthStack", "earnEthAlloc", flattenAllocations(mEth.d), ethTvl, "eth", ctx);
   } else $("earnEthHead").textContent = "EarnETH — Mellow API unavailable";
   if (mUsd) {
     $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnUsdSpark"), (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    renderAlloc("earnUsdStack", "earnUsdAlloc", flattenAllocations(mUsd.d), usdTvl, "usd");
+    renderAlloc("earnUsdStack", "earnUsdAlloc", flattenAllocations(mUsd.d), usdTvl, "usd", ctx);
   } else $("earnUsdHead").textContent = "EarnUSD — Mellow API unavailable";
 
   // peer look-through
