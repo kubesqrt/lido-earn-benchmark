@@ -23,7 +23,7 @@
   html { background: var(--page); }
   body { background: var(--page); color: var(--ink); margin: 0; min-height: 100vh;
          font: 400 14px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 30px 22px 70px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
   .eyebrow { font: 500 10.5px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
   h1 { font-size: 24px; margin: 8px 0 4px; letter-spacing: -.01em; font-weight: 600; text-wrap: balance; }
   .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; }
@@ -39,13 +39,13 @@
   .status span.wait::before { content: "● "; color: var(--muted); }
   .status span.err::before { content: "● "; color: var(--crit); }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 16px 0 4px; }
-  .tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 4px; padding: 13px 15px; }
+  .tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 2px; border-top: 2px solid var(--axis); padding: 12px 14px; }
   .tile .k { font: 500 10.5px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
   .tile .v { font: 600 25px/1.15 var(--mono); margin: 5px 0 0; letter-spacing: -.02em; }
   .tile .v.up { color: var(--good); } .tile .v.down { color: var(--crit); }
   .tile .d { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
   .tile .d b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 11.5px; }
-  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 4px; padding: 16px 18px; margin: 10px 0 0; }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 2px; padding: 15px 17px; margin: 10px 0 0; }
   .cardhead { font-size: 13.5px; font-weight: 600; }
   .cardhead small { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 8px; font-family: var(--mono); }
   .scroll { overflow-x: auto; }
@@ -125,6 +125,16 @@
   .peerchips b { color: var(--ink); font-family: var(--mono); font-size: 11px; }
   footer { margin-top: 40px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--grid); padding-top: 14px; }
   .skel { color: var(--muted); font-size: 13px; padding: 14px 0; }
+  .masthead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .mast-right { font: 500 11px/1 var(--mono); color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; padding-bottom: 6px; white-space: nowrap; }
+  .mast-right b { font-weight: 500; color: var(--ink-2); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 6px rgba(47,181,77,.7); }
+  .ticker { display: flex; flex-wrap: wrap; gap: 0 22px; border-top: 1px solid var(--grid); border-bottom: 1px solid var(--grid);
+            padding: 7px 0; margin: 14px 0 12px; font: 400 11px/1.7 var(--mono); color: var(--muted); }
+  .ticker b { color: var(--ink); font-weight: 500; margin-left: 6px; }
+  .ticker .u { color: var(--good); } .ticker .d { color: var(--crit); }
+  .idx { color: var(--accent); margin-right: 8px; font-weight: 500; }
+  td.rank { color: var(--muted); font-family: var(--mono); font-size: 10px; width: 26px; padding-right: 2px; }
   @keyframes pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
   .skel { animation: pulse 1.4s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) { .skel { animation: none; } .bar, .stackbar div { transition: none; } }
@@ -132,29 +142,35 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Curation benchmark board · live data</div>
-  <h1>Lido Earn vs the field</h1>
-  <p class="sub">ETH &amp; USD vault rates, 90-day trends and live allocations, fetched in your browser on every load &middot; <b id="asof">loading&hellip;</b></p>
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Curation benchmark board</div>
+      <h1>Lido Earn vs the field</h1>
+    </div>
+    <div class="mast-right"><span class="live-dot"></span><b id="asof">loading&hellip;</b></div>
+  </div>
+  <div class="ticker" id="ticker"><span class="skel">market data loading&hellip;</span></div>
+  <p class="sub">ETH &amp; USD vault rates, 90-day trends and live allocations &mdash; fetched in your browser on every load.</p>
   <div class="status" id="status"></div>
 
   <div class="tiles" id="tiles"><div class="skel">Loading benchmark data&hellip;</div></div>
 
-  <h2>ETH-denominated vaults</h2>
+  <h2><span class="idx">01</span>ETH-denominated vaults</h2>
   <p class="note"><b>stETH APR</b> (live from Lido's API) is the passive baseline &mdash; a Lido user's opportunity cost. Aave/Spark WETH lending is the floor. EarnETH's spread over stETH is what curation earns for its risk stack: leverage, LRT, carry, bridge. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="ethBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="ethTable"></div></div>
 
-  <h2>USD-denominated vaults</h2>
+  <h2><span class="idx">02</span>USD-denominated vaults</h2>
   <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything above ~5.5% embeds leverage, credit or young-chain risk somewhere. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="usdBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="usdTable"></div></div>
 
-  <h2>90-day APY trend</h2>
+  <h2><span class="idx">03</span>90-day APY trend</h2>
   <p class="note">Peer histories from DefiLlama. Lido Earn vaults aren't listed there (a transparency gap worth closing) &mdash; the dashed rule marks their live 14-day time-weighted APY from Mellow's API; the mini-chart in each allocation card shows the vault's own recent APY reports.</p>
   <div class="grid2">
     <div class="card"><div class="legend" id="ethTrendLegend"></div><div class="scroll" id="ethTrend"><div class="skel">Loading&hellip;</div></div></div>
     <div class="card"><div class="legend" id="usdTrendLegend"></div><div class="scroll" id="usdTrend"><div class="skel">Loading&hellip;</div></div></div>
   </div>
 
-  <h2>Where Lido Earn's money is right now</h2>
+  <h2><span class="idx">04</span>Where Lido Earn's money is right now</h2>
   <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield / carry</b> is priced from live market rates: direct positions show the underlying's current rate; levered loops show an <b>estimated total net APY</b> at the leverage assumption you pick below (net = s&middot;L &minus; b&middot;(L&minus;1); on-chain leverage isn't published &mdash; hover any value for its components and its contribution to vault APY). Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
   <div class="levctl"><span class="lbl">Loop leverage assumption</span>
     <div class="seg" id="levSeg"><button data-l="2">2&times;</button><button data-l="3" class="on">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
@@ -175,21 +191,21 @@
     </div>
   </div>
 
-  <h2>Exposure lenses</h2>
+  <h2><span class="idx">05</span>Exposure lenses</h2>
   <p class="note">The same book, cut three ways &mdash; <b>by chain</b> (settlement/bridge risk), <b>by venue</b> (protocol counterparty), and <b>by risk factor</b> (what actually has to go wrong to lose money). Concentrations that look fine position-by-position show up here: correlated positions share one lens segment.</p>
   <div class="grid2">
     <div class="card"><div class="cardhead">EarnETH</div><div id="lensEth"><div class="skel">Loading&hellip;</div></div></div>
     <div class="card"><div class="cardhead">EarnUSD</div><div id="lensUsd"><div class="skel">Loading&hellip;</div></div></div>
   </div>
 
-  <h2>Peer look-through</h2>
+  <h2><span class="idx">06</span>Peer look-through</h2>
   <div class="card">
     <p class="note" style="margin-bottom:4px">ether.fi Liquid vaults' live allocations (Seven Seas API) &mdash; the closest competitor's book, side by side with Earn's.</p>
     <div class="peerchips" id="peerEth"><span>Loading&hellip;</span></div>
     <div class="peerchips" id="peerUsd"></div>
   </div>
 
-  <h2>Methodology</h2>
+  <h2><span class="idx">07</span>Methodology</h2>
   <div class="card meth">
     <p><b style="color:var(--ink)">Benchmark stack:</b> tier 1 = passive baseline (stETH APR / sUSDS); tier 2 = market beta (TVL-weighted top vaults, vaults.fyi-style); tier 3 = named-peer median (this board). All APYs net-of-fees as reported by each source. <b style="color:var(--ink)">Risk adjustment:</b> <code>spread / &sigma;</code>, where &sigma; = standard deviation of daily APY over the last 90 days (computed here from the same histories) &mdash; note &sigma; understates tail risk for credit and bridge exposures, so overlay the allocation flags.</p>
     <p><b style="color:var(--ink)">Live sources:</b> DefiLlama <code>yields.llama.fi/chart/&#123;pool&#125;</code> per pool &middot; Mellow <code>api.mellow.finance/v1/chain/1/core-vaults/&#123;vault&#125;/data</code> + <code>/timeweighted-apy</code> &middot; Lido <code>eth-api.lido.fi/v1/protocol/steth/apr/last</code> &middot; Seven Seas <code>api.sevenseas.capital</code>. Row click-throughs fetch on demand: Morpho <code>api.morpho.org/graphql</code> (V1 + V2 vaults) &middot; Yearn <code>ydaemon.yearn.fi</code> &middot; Fluid Lite <code>api.instadapp.io</code> / <code>api.fluid-lite.instadapp.ai</code>. All fetched client-side; nothing stored, no keys.</p>
@@ -201,6 +217,8 @@
 
 <script>
 "use strict";
+window.addEventListener("unhandledrejection", e => { document.title = "REJ: " + ((e.reason && e.reason.stack) || e.reason).toString().slice(0, 180); });
+window.addEventListener("error", e => { document.title = "ERR: " + e.message + " L" + e.lineno; });
 // ---------- registry ----------
 const VAULTS = {
   earnETH: { addr: "0x6a37725ca7f4CE81c004c955f7280d5C704a249e" },
@@ -237,13 +255,13 @@ const POOL_IDS = {
                                allocSource: { t: "none", note: "Levered rsETH strategy; APY is self-reported on-chain and there is no public allocation API." } },
   "Origin OETH":             { id: "423681e3-4787-40ce-ae43-e9f67c5269b3", tag: "automated · mostly staking", grp: "eth",
                                allocSource: { t: "none", addr: "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3", note: "Mostly direct beacon-chain staking plus a small AMO — Origin publishes the split on its own analytics page, not a machine API." } },
-  "Moonwell Flagship ETH · Base": { id: "4280d14b-b720-41e2-afab-a1760dbb0d54", tag: "Block Analitica + B.Protocol · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Moonwell Flagship ETH · Base": { id: "4280d14b-b720-41e2-afab-a1760dbb0d54", tag: "Block Analitica + B.Protocol · Base", grp: "eth", peer: true, allocSource: { t: "morpho", chain: 8453, addr: "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1" } },
   "yoETH · Base":            { id: "2070ceaf-eedb-4795-9ede-6841ec515e1a", tag: "YO cross-protocol aggregator · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
   "IPOR Fusion ETH · Base":  { id: "a1dc9b8c-bf6b-4132-8578-a501c063a3c8", tag: "lending optimizer · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
   "mRe7ETH · Optimism":      { id: "7380a44d-da0e-460b-b149-0c2f2f271316", tag: "Re7 via Midas · NAV-reported APY", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
   "Steakhouse ETH · Monad":  { id: "22f041f7-8313-43c2-b319-bcf70f5ee2aa", tag: "Steakhouse · Monad · flat reward leg", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
   "K3 Earn WETH · Monad":    { id: "951e4e49-9760-49a3-aea9-bd832384219f", tag: "K3 Euler cluster · Monad · MON rewards", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
-  "Gauntlet WETH · Katana":  { id: "23a8c413-1595-4380-9a0b-e8eb04907a90", tag: "Gauntlet · Katana · flat reward leg", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "Gauntlet WETH · Katana":  { id: "23a8c413-1595-4380-9a0b-e8eb04907a90", tag: "Gauntlet · Katana · flat reward leg", grp: "eth", allocSource: { t: "morpho", chain: 747474, addr: "0xC5e7AB07030305fc925175b25B93b285d40dCdFf" } },
   "Yearn vbETH · Katana":    { id: "23efa6ee-dbe8-4590-9857-5e0a4bcfc9ed", tag: "Yearn canonical · Katana", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
   "Spark WETH (lend)":       { id: "24195b31-d749-445f-bf9e-b65aa025ebdd", tag: "floor · plain lend", grp: "eth",
                                allocSource: { t: "none", addr: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987", note: MM_NOTE } },
@@ -287,16 +305,16 @@ const POOL_IDS = {
                                allocSource: { t: "fluidUsd", addr: "0x273DA948ACa9261043fbdb2a857BC255ECC29012" } },
   "Aave v3 USDC (lend)":     { id: "aa70268e-4b52-42bf-a116-608b370f9501", tag: "floor · plain lend", grp: "usd",
                                allocSource: { t: "none", addr: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", note: MM_NOTE } },
-  "Steakhouse USDC · Base":  { id: "ba68527f-8ec2-4c55-827a-8f4673ae047c", tag: "Steakhouse flagship · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
-  "Gauntlet USDC Prime · Base": { id: "e0672197-9f3e-4414-bca5-e6b4c90aa469", tag: "Gauntlet flagship · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Steakhouse USDC · Base":  { id: "ba68527f-8ec2-4c55-827a-8f4673ae047c", tag: "Steakhouse flagship · Base", grp: "usd", peer: true, allocSource: { t: "morpho", chain: 8453, addr: "0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2" } },
+  "Gauntlet USDC Prime · Base": { id: "e0672197-9f3e-4414-bca5-e6b4c90aa469", tag: "Gauntlet flagship · Base", grp: "usd", peer: true, allocSource: { t: "morpho", chain: 8453, addr: "0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61" } },
   "Smokehouse USDC · Base":  { id: "832c94db-4948-4f14-aa65-af6e737d984e", tag: "Steakhouse BBQ line · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
   "Plasma USD (Veda) · Plasma": { id: "95d4f805-1800-4184-98a0-6e49b3ccad8a", tag: "Plasma-native multi-strategy — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
   "K3 USDT0 · Plasma":       { id: "93b667e0-edbc-4264-984d-8b078a2fd9b9", tag: "K3 Euler · Plasma-native — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
-  "Felix USDC · HyperEVM":   { id: "8622e84a-794b-4b68-aad2-a6a2e0e0d2c7", tag: "MEV Capital · HyperEVM", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Felix USDC · HyperEVM":   { id: "8622e84a-794b-4b68-aad2-a6a2e0e0d2c7", tag: "MEV Capital · HyperEVM", grp: "usd", peer: true, allocSource: { t: "morpho", chain: 999, addr: "0x8A862fD6c12f9ad34C9c2ff45AB2b6712e8CEa27" } },
   "Avant savUSD · Avalanche": { id: "c74227a1-e738-4021-bbe1-13363815aecb", tag: "delta-neutral senior tranche · Avalanche", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
   "Hyperithm USDC · Monad":  { id: "ec6a71a7-41ae-4e72-942f-b4bc99c3b3cb", tag: "Hyperithm · Monad", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
   "Upshift AUSD · Monad":    { id: "e10580de-1ad2-4bbc-a0e8-ad4db95df4a3", tag: "Upshift · Monad", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
-  "Steakhouse USDC · Katana": { id: "d56ab93e-d48d-44f2-8139-9bb020afc980", tag: "Steakhouse · Katana · flat reward leg", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
+  "Steakhouse USDC · Katana": { id: "d56ab93e-d48d-44f2-8139-9bb020afc980", tag: "Steakhouse · Katana · flat reward leg", grp: "usd", allocSource: { t: "morpho", chain: 747474, addr: "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d" } },
 };
 const TREND = {
   eth: ["Lido stETH", "ether.fi Liquid ETH", "Fluid Lite ETH"],
@@ -357,6 +375,7 @@ const debank = a => "https://debank.com/profile/" + a;
 
 // ---------- click-through live strategy viewer (Feature A) ----------
 let SEVEN = null; // Seven Seas payloads, set by main() — reused by the ether.fi adapter
+let HIST = null;  // per-pool DefiLlama history, set by main() — powers strategy cards for no-API vaults
 function capRows(rows, n) { // keep panels compact: top n, aggregate the tail
   rows.sort((a, b) => b.pct - a.pct);
   if (rows.length <= n + 1) return rows;
@@ -366,7 +385,7 @@ function capRows(rows, n) { // keep panels compact: top n, aggregate the tail
 const mktLabel = m => (m.collateralAsset ? m.collateralAsset.symbol : "Idle") + " / " + m.loanAsset.symbol +
   (m.collateralAsset && m.lltv > 0 ? " · " + (m.lltv / 1e16).toFixed(1) + "% LLTV" : "");
 async function morphoV1Alloc(cfg) {
-  const d = await gql(`{ vaultByAddress(address: "${cfg.addr}", chainId: 1) { name symbol state { totalAssetsUsd netApy allocation { supplyAssetsUsd market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } }`);
+  const d = await gql(`{ vaultByAddress(address: "${cfg.addr}", chainId: ${cfg.chain || 1}) { name symbol state { totalAssetsUsd netApy allocation { supplyAssetsUsd market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } }`);
   const v = d.vaultByAddress, st = v.state, tot = st.totalAssetsUsd || 1;
   let rows = (st.allocation || [])
     .filter(a => a.supplyAssetsUsd > Math.max(tot * 0.001, 100))
@@ -379,7 +398,7 @@ async function morphoV1Alloc(cfg) {
            src: "Morpho API · live", rows, link: debank(cfg.addr) };
 }
 async function morphoV2Alloc(cfg) {
-  const d = await gql(`{ vaultV2s(first: 1, where: { address_in: ["${cfg.addr}"], chainId_in: [1] }) { items { name symbol totalAssetsUsd idleAssetsUsd netApy adapters(first: 12) { items { __typename assetsUsd ... on MetaMorphoAdapter { metaMorpho { symbol state { netApy } } } ... on MorphoMarketV1Adapter { positions(first: 24) { items { state { supplyAssetsUsd } market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } ... on MorphoVaultV2Adapter { innerVault { name symbol } } } } } } }`);
+  const d = await gql(`{ vaultV2s(first: 1, where: { address_in: ["${cfg.addr}"], chainId_in: [${cfg.chain || 1}] }) { items { name symbol totalAssetsUsd idleAssetsUsd netApy adapters(first: 12) { items { __typename assetsUsd ... on MetaMorphoAdapter { metaMorpho { symbol state { netApy } } } ... on MorphoMarketV1Adapter { positions(first: 24) { items { state { supplyAssetsUsd } market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } ... on MorphoVaultV2Adapter { innerVault { name symbol } } } } } } }`);
   const v = d.vaultV2s.items[0];
   if (!v) throw new Error("vault not found");
   const tot = v.totalAssetsUsd || 1;
@@ -466,10 +485,40 @@ async function fluidUsdAlloc(cfg) {
   return { head: `Fluid Lite USD — ${fmt$(tot * price)} · ${(+d.rate / 100).toFixed(2)}% APY (fixed ${(+d.fixedRate / 100).toFixed(2)}% + rewards)`,
            src: "Fluid Lite API · live", rows, link: debank(cfg.addr) };
 }
+function sparkSvg(pts, col) { // pure-string 90d sparkline for strategy cards
+  if (!pts || pts.length < 2) return "";
+  const W = 300, H = 40, vs = pts.map(p => p.v);
+  const vmax = Math.max(...vs) + 0.2, vmin = Math.min(0, ...vs);
+  const x = i => 2 + (W - 48) * i / (pts.length - 1);
+  const y = v => 4 + (H - 10) * (1 - (v - vmin) / (vmax - vmin || 1));
+  const line = pts.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.v).toFixed(1)).join("");
+  const last = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:300px;height:40px;display:block;margin-top:8px">` +
+    `<path d="${line} L ${x(pts.length-1).toFixed(1)} ${H-4} L 2 ${H-4} Z" fill="rgba(57,135,229,0.12)"/>` +
+    `<path d="${line}" fill="none" stroke="${col || "var(--accent)"}" stroke-width="1.6"/>` +
+    `<circle cx="${x(pts.length-1)}" cy="${y(last.v)}" r="2.5" fill="${col || "var(--accent)"}"/>` +
+    `<text x="${x(pts.length-1)+6}" y="${y(last.v)+3.5}" fill="var(--ink-2)" font-size="10">${last.v.toFixed(2)}%</text></svg>`;
+}
 function noneAlloc(cfg, name) {
-  return { head: name + " — no public allocation API",
-           note: cfg.note || "This vault doesn't publish a machine-readable allocation; on-chain holdings are the source of truth.",
-           link: cfg.addr ? debank(cfg.addr) : null };
+  // single-strategy or no-API vault → live strategy card from the cached DefiLlama series
+  const pts = HIST && HIST[name] ? HIST[name].slice(-90).map(p => ({ v: p.v })) : null;
+  const full = HIST && HIST[name] ? HIST[name] : null;
+  let head = name, rows = null, extra = "";
+  if (full && full.length) {
+    const last = full[full.length - 1], m30 = mean(full.slice(-30).map(p => p.v)), sg = stdev(full.slice(-90).map(p => p.v));
+    const tvl90 = full.length > 90 ? full[full.length - 91].tvl : full[0].tvl;
+    const dTvl = tvl90 ? (last.tvl - tvl90) / tvl90 * 100 : null;
+    head = `${name} — ${fmt$(last.tvl)} · ${last.v.toFixed(2)}% APY`;
+    rows = [
+      { label: "APY · 30d mean / σ 90d", pct: null, apyText: m30.toFixed(2) + "% / " + sg.toFixed(2) },
+      { label: "TVL · 90d change", pct: null, apyText: dTvl != null ? (dTvl >= 0 ? "+" : "") + dTvl.toFixed(1) + "%" : "—" },
+    ];
+    extra = sparkSvg(pts) + `<div style="font:400 10px/1.6 var(--mono);color:var(--muted)">90d APY · DefiLlama series · live</div>`;
+  }
+  return { head, rows,
+           note: cfg.note || "Single-strategy product — there is no allocation to unfold; the series above is the whole story.",
+           extra, link: cfg.addr ? debank(cfg.addr) : null,
+           src: full ? "DefiLlama · live" : undefined };
 }
 const allocCache = {};
 function fetchAlloc(name) {
@@ -497,9 +546,10 @@ function panelHtml(res) {
   if (res.note) h += `<p class="dnote">${res.note}</p>`;
   if (res.rows && res.rows.length) {
     h += `<table><tr><th>Asset / market</th><th class="num">%</th><th class="num">APY</th></tr>` +
-      res.rows.map(r => `<tr><td>${r.label}</td><td class="num">${r.pct.toFixed(1)}%</td>` +
+      res.rows.map(r => `<tr><td>${r.label}</td><td class="num">${r.pct != null ? r.pct.toFixed(1) + "%" : ""}</td>` +
         `<td class="num">${r.apyText != null ? r.apyText : r.apy != null ? r.apy.toFixed(2) + "%" : "—"}</td></tr>`).join("") + `</table>`;
   }
+  if (res.extra) h += res.extra;
   if (res.link) h += `<div class="dfoot"><a href="${res.link}" target="_blank" rel="noopener">on-chain portfolio &rarr; DeBank</a></div>`;
   return h + `</div>`;
 }
@@ -512,7 +562,7 @@ function toggleDetail(tr, forceOpen) {
   if (wasOpen && !forceOpen) return;
   tr.classList.add("open");
   const det = document.createElement("tr"); det.className = "detail";
-  const td = document.createElement("td"); td.colSpan = 8; det.appendChild(td);
+  const td = document.createElement("td"); td.colSpan = 9; det.appendChild(td);
   tr.after(det);
   td.innerHTML = `<div class="dpanel"><div class="skel">Fetching live allocation&hellip;</div></div>`;
   fetchAlloc(tr.dataset.name)
@@ -523,20 +573,20 @@ function toggleDetail(tr, forceOpen) {
 
 // ---------- charts ----------
 function barChart(el, rows, benchmarks, tableEl) {
-  const W = 920, rowH = 31, padL = 200, padR = 64, padT = 10;
+  const W = 920, rowH = 26, padL = 210, padR = 66, padT = 10;
   const H = padT + rows.length * rowH + 28;
   const max = Math.ceil(Math.max(...rows.map(r => r.apy), ...benchmarks.map(b => b.v)) + 0.6);
   const x = v => padL + (W - padL - padR) * v / max;
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:660px;display:block">`;
   for (let g = 0; g <= max; g++) {
     s += `<line x1="${x(g)}" y1="${padT}" x2="${x(g)}" y2="${H-24}" stroke="var(--grid)"/>`;
-    s += `<text x="${x(g)}" y="${H-9}" fill="var(--muted)" font-size="11" text-anchor="middle">${g}%</text>`;
+    s += `<text x="${x(g)}" y="${H-9}" fill="var(--muted)" font-size="10" text-anchor="middle">${g}%</text>`;
   }
   rows.forEach((r, i) => {
-    const y = padT + i * rowH, h = 17, bw = Math.max(x(r.apy) - x(0), 2);
-    s += `<text x="${padL-9}" y="${y+h/2+4.5}" fill="${r.lido ? "var(--ink)" : "var(--ink-2)"}" font-size="12.5" text-anchor="end" font-weight="${r.lido?700:400}">${r.name}</text>`;
-    s += `<rect class="bar" data-i="${i}" x="${x(0)}" y="${y}" width="${bw}" height="${h}" rx="4" fill="${r.lido ? "var(--accent)" : "var(--peer-bar)"}"/>`;
-    s += `<text x="${x(r.apy)+7}" y="${y+h/2+4.5}" fill="var(--ink)" font-size="12" font-weight="600" style="font-variant-numeric:tabular-nums">${r.apy.toFixed(2)}%</text>`;
+    const y = padT + i * rowH, h = 13, bw = Math.max(x(r.apy) - x(0), 2);
+    s += `<text x="${padL-9}" y="${y+h/2+4}" fill="${r.lido ? "var(--ink)" : "var(--ink-2)"}" font-size="11.5" text-anchor="end" font-weight="${r.lido?600:400}" font-family="var(--sans)">${r.name}</text>`;
+    s += `<rect class="bar" data-i="${i}" x="${x(0)}" y="${y}" width="${bw}" height="${h}" rx="2" fill="${r.lido ? "var(--accent)" : "var(--peer-bar)"}"/>`;
+    s += `<text x="${x(r.apy)+7}" y="${y+h/2+4}" fill="var(--ink)" font-size="10.5" font-weight="500">${r.apy.toFixed(2)}%</text>`;
   });
   benchmarks.forEach(b => {
     s += `<line x1="${x(b.v)}" y1="${padT-3}" x2="${x(b.v)}" y2="${H-24}" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
@@ -558,10 +608,10 @@ function barChart(el, rows, benchmarks, tableEl) {
   });
 }
 function compTable(el, rows, bench) {
-  let h = `<table><tr><th>Vault</th><th>Strategy</th><th class="num">APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
-  rows.forEach(r => {
+  let h = `<table><tr><th></th><th>Vault</th><th>Strategy</th><th class="num">APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
+  rows.forEach((r, ri) => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
-    h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td><span class="caret"></span>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
+    h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
       `<td class="num">${r.apy.toFixed(2)}%</td><td class="num">${r.m30 != null ? r.m30.toFixed(2) + "%" : "—"}</td>` +
       `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${pp(sp)}</td>` +
       `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td>` +
@@ -836,6 +886,15 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
   ethRows.sort((a, b) => b.apy - a.apy); usdRows.sort((a, b) => b.apy - a.apy);
 
+  // ticker ribbon — the live rates that price the whole board
+  const tick = [];
+  const tk = (l, v, sfx) => { if (v != null && isFinite(v)) tick.push(`<span>${l}<b>${v.toFixed(2)}${sfx || "%"}</b></span>`); };
+  tk("stETH APR", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
+  tk("sUSDS", USD_BENCH); tick.push(`<span>SOFR<b>3.63%</b></span>`);
+  tk("USDe borrow", borrowMap[BORROW.usdeEth]); tk("USDT0·Plasma borrow", borrowMap[BORROW.usdt0Plasma]);
+  tk("EarnETH", ethApy); tk("EarnUSD", usdApy);
+  $("ticker").innerHTML = tick.join("");
+
   // KPI tiles
   const ethPeerMed = median(ethRows.filter(r => r.peer).map(r => r.apy));
   const usdPeerMed = median(usdRows.filter(r => r.peer).map(r => r.apy));
@@ -854,8 +913,9 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
 
   // bars + tables (bars and rows click through to each vault's live allocation)
   SEVEN = seven;
+  HIST = hist;
   if (ethRows.length) { compTable($("ethTable"), ethRows, ETH_BENCH); barChart($("ethBars"), ethRows, [{ v: ETH_BENCH, label: "stETH" }], $("ethTable")); }
-  if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS" }, { v: 3.79, label: "T-bill" }], $("usdTable")); }
+  if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS " + USD_BENCH.toFixed(2) + "%" }], $("usdTable")); }
 
   // trends (last 90d slices)
   const trendPts = n => hist[n] ? hist[n].slice(-90).map(p => ({ d: p.d, v: p.v })) : null;
