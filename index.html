@@ -64,6 +64,15 @@
   .flag.ok   { color: #7fd794; background: rgba(47,181,77,0.10); border: 1px solid rgba(47,181,77,0.22); }
   .yld { border-bottom: 1px dotted var(--muted); cursor: help; color: var(--ink); }
   .yld.neg { color: #ff9d9d; }
+  .lens { margin-top: 14px; }
+  .lens .lbl { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+  .minibar { display: flex; gap: 2px; height: 16px; border-radius: 4px; overflow: hidden; }
+  .minibar div { min-width: 2px; transition: filter .1s; }
+  .minibar div:hover { filter: brightness(1.3); }
+  .lenschips { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+  .lenschips span { display: inline-flex; align-items: center; gap: 5px; }
+  .lenschips i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .lenschips b { color: var(--ink); font-variant-numeric: tabular-nums; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid2 > * { min-width: 0; }
   @media (max-width: 880px) { .grid2 { grid-template-columns: 1fr; } }
@@ -131,6 +140,13 @@
     </div>
   </div>
 
+  <h2>Exposure lenses</h2>
+  <p class="note">The same book, cut three ways &mdash; <b>by chain</b> (settlement/bridge risk), <b>by venue</b> (protocol counterparty), and <b>by risk factor</b> (what actually has to go wrong to lose money). Concentrations that look fine position-by-position show up here: correlated positions share one lens segment.</p>
+  <div class="grid2">
+    <div class="card"><div class="cardhead">EarnETH</div><div id="lensEth"><div class="skel">Loading&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnUSD</div><div id="lensUsd"><div class="skel">Loading&hellip;</div></div></div>
+  </div>
+
   <h2>Peer look-through</h2>
   <div class="card">
     <p class="note" style="margin-bottom:4px">ether.fi Liquid vaults' live allocations (Seven Seas API) &mdash; the closest competitor's book, side by side with Earn's.</p>
@@ -161,12 +177,23 @@ const POOL_IDS = {
   "Fluid Lite ETH":          { id: "e72916f7-a2d1-47ad-a4b9-2b054337cfd6", tag: "pure looper · wstETH+weETH", grp: "eth", peer: true },
   "Steakhouse ETH (Morpho)": { id: "eed40ce3-ca1a-4433-b3e1-0689ed33d5cd", tag: "unlevered wstETH/WETH lend", grp: "eth", peer: true },
   "Gauntlet WETH Prime":     { id: "eaa7b496-512f-442f-be1f-9d8909442e53", tag: "unlevered lend + weETH", grp: "eth", peer: true },
+  "Yearn v3 WETH-1":         { id: "2b840e0a-2823-4972-9bfc-8b766c90374b", tag: "multi-strategy classic", grp: "eth", peer: true },
+  "Galaxy WETH Quality":     { id: "8ae91608-6de0-4445-a456-3db2c2ab18a5", tag: "Galaxy curated · Morpho V2", grp: "eth", peer: true },
+  "autoETH (Auto Finance)":  { id: "e9a686bf-21ed-4f78-82be-cd32625c4725", tag: "autopool rotator (ex-Tokemak)", grp: "eth", peer: true },
+  "Upshift hgETH":           { id: "bb925c10-033a-488d-90c1-595001b5656e", tag: "levered rsETH · APY self-reported", grp: "eth" },
+  "Origin OETH":             { id: "423681e3-4787-40ce-ae43-e9f67c5269b3", tag: "automated · mostly staking", grp: "eth" },
   "Spark WETH (lend)":       { id: "24195b31-d749-445f-bf9e-b65aa025ebdd", tag: "floor · plain lend", grp: "eth" },
   "Aave v3 WETH (lend)":     { id: "e880e828-ca59-4ec6-8d4f-27182a4dc23d", tag: "floor · plain lend", grp: "eth" },
   "ether.fi Liquid USD":     { id: "7c12f175-37bc-41db-967a-1d7f1f4a23c4", tag: "curated · multi-chain RWA", grp: "usd", peer: true },
   "Smokehouse USDC":         { id: "f8d7740c-4cef-420e-a944-1b7caffde643", tag: "high-yield · RWA/credit", grp: "usd", peer: true },
   "Gauntlet USDC Frontier":  { id: "ff113246-f6e0-4e10-b92c-abd3cd1d7dd6", tag: "frontier tier", grp: "usd", peer: true },
-  "Gauntlet USDC Prime":     { id: "a306885c-001e-4479-9ae8-459a56527bc1", tag: "prime tier · BTC/ETH collat", grp: "usd" },
+  "Gauntlet USDC Prime V2":  { id: "71b34441-5a46-431b-a9b3-8c081cd0d74c", tag: "prime tier · Morpho V2", grp: "usd", peer: true },
+  "Hyperithm USDC Apex":     { id: "5a55b869-de6e-42ba-9091-6ee0e02525c2", tag: "aggressive mandate · Morpho V2", grp: "usd", peer: true },
+  "Wintermute USDC Select":  { id: "d2a99602-b0c7-4f6a-a329-82bdaad3df0c", tag: "Armitage by Wintermute", grp: "usd", peer: true },
+  "kpk USDC Prime":          { id: "052e3f85-e489-4bee-9e34-c7898ef1d449", tag: "kpk (ex-karpatkey)", grp: "usd", peer: true },
+  "Sentora RLUSD Main":      { id: "2e53bb82-f13f-4157-a3bf-b1a91b94b6a4", tag: "RLUSD-denominated · Morpho V2", grp: "usd", peer: true },
+  "Yearn v3 USDC-1":         { id: "7d89af7a-24c9-4292-aa38-7c71b05fbd6d", tag: "multi-strategy classic", grp: "usd", peer: true },
+  "Gauntlet USD Alpha (Base)": { id: "c043062f-fcd6-47aa-b063-70691dc25c1c", tag: "cross-protocol meta-vault · Base", grp: "usd", peer: true },
   "Steakhouse USDC":         { id: "b55f43a8-f444-4cd8-a3a4-0a4e786ba566", tag: "prime tier · BTC collat", grp: "usd" },
   "Sentora PYUSD Main":      { id: "699f25fe-09f4-4f82-8f58-baa5b0af8fa4", tag: "PYUSD markets + rewards", grp: "usd", peer: true },
   "Sentora PRIME":           { id: "f569e486-da2a-41ef-8bfe-1a4db0d1d268", tag: "credit / PRIME", grp: "usd" },
@@ -344,10 +371,10 @@ function flattenAllocations(data) {
         if (pct < 0.05) return;
         const subIdle = sub.category === "token" || /^(eth|weth|wsteth|usdt|usdc)$/i.test(sub.id || "");
         out.push({ label: sub.label + (data.allocations.length > 1 ? " · " + a.label : ""),
-                   pct, chain: sub.chain, cat: subIdle ? "idle" : "pos" });
+                   pct, chain: sub.chain, proto: sub.protocol, cat: subIdle ? "idle" : "pos" });
       });
     } else if (a.sharePercent >= 0.05) {
-      out.push({ label: a.label, pct: a.sharePercent, chain: a.chain, cat: idle ? "idle" : "pos" });
+      out.push({ label: a.label, pct: a.sharePercent, chain: a.chain, proto: a.protocol, cat: idle ? "idle" : "pos" });
     }
   });
   const idle = out.filter(r => r.cat === "idle").reduce((s, r) => s + r.pct, 0);
@@ -356,6 +383,7 @@ function flattenAllocations(data) {
   const top = rows.slice(0, 11);
   const rest = rows.slice(11).reduce((s, r) => s + r.pct, 0);
   if (rest > 0.05) top.push({ label: "Other", pct: rest, chain: "ethereum", cat: "other" });
+  top.full = rows; // unfolded list — used by the exposure lenses
   return top;
 }
 // per-position yield: direct positions → live market rate of the underlying;
@@ -383,6 +411,61 @@ function yieldEst(row, vault, ctx) {
   if (/morpho wsteth\/weth/i.test(L)) return null;
   if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return { text: "0%", tip: "unallocated — earns nothing" };
   return null;
+}
+// ---------- exposure lenses: same book, three cuts ----------
+const LENS_COLORS = {
+  chain: { ethereum: "#3987e5", plasma: "#e66767", mantle: "#d95926", base: "#199e70", other: "#3a4656" },
+  venue: { Aave: "#3987e5", Spark: "#c98500", Morpho: "#199e70", Ethena: "#d55181", Maple: "#d95926", "Mellow (own vault)": "#9085e9", Lido: "#5f9ec7", "Idle": "#3a4656", Other: "#3a4656" },
+  risk:  { "Levered stETH loop": "#3987e5", "Levered LRT loop": "#e66767", "ETH-collat USD carry": "#c98500",
+           "Ethena basis": "#d55181", "Levered credit loop": "#d95926", "Credit (Maple)": "#9085e9",
+           "Plain lending": "#199e70", "Recursive (own vault)": "#5f9ec7", "Idle / pending": "#3a4656", Other: "#3a4656" },
+};
+function venueOf(r, vault) {
+  const L = r.label, p = (r.proto || "").toLowerCase();
+  if (r.cat === "idle") return "Idle";
+  if (vault === "eth" && (/mellow/.test(p) || /^earnusd/i.test(L))) return "Mellow (own vault)";
+  if (/aave/.test(p) || /aave/i.test(L)) return "Aave";
+  if (/spark/.test(p) || /spark/i.test(L)) return "Spark";
+  if (/morpho|sentora/i.test(p + L)) return "Morpho";
+  if (/maple|syrup/i.test(p + L) && !/usdt0/i.test(L)) return "Maple";
+  if (/ethena|susde/i.test(p + L)) return "Ethena";
+  if (/lido|wsteth$/i.test(p)) return "Lido";
+  return "Other";
+}
+function riskOf(r, vault) {
+  const L = r.label;
+  if (r.cat === "idle" || /pending/i.test(L)) return "Idle / pending";
+  if (/rseth/i.test(L)) return "Levered LRT loop";
+  if (/wsteth\/eth/i.test(L)) return "Levered stETH loop";
+  if (/wsteth\/usd/i.test(L)) return "ETH-collat USD carry";
+  if (vault === "eth" && /earnusd/i.test(L)) return "Recursive (own vault)";
+  if (/syrupusdt\/usdt0/i.test(L)) return "Levered credit loop";
+  if (/levered ethena|^susde/i.test(L)) return "Ethena basis";
+  if (/maple|syrup/i.test(L)) return "Credit (Maple)";
+  if (/sparklend|sentora|morpho|lend/i.test(L)) return "Plain lending";
+  return "Other";
+}
+function renderLenses(elId, rows, vault) {
+  rows = rows.full || rows;
+  const cuts = [
+    { name: "By chain", key: r => (r.chain || "ethereum").toLowerCase(), colors: LENS_COLORS.chain },
+    { name: "By venue", key: r => venueOf(r, vault), colors: LENS_COLORS.venue },
+    { name: "By risk factor", key: r => riskOf(r, vault), colors: LENS_COLORS.risk },
+  ];
+  $(elId).innerHTML = cuts.map(cut => {
+    const agg = {};
+    rows.forEach(r => { const k = cut.key(r); agg[k] = (agg[k] || 0) + r.pct; });
+    const items = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+    const col = k => cut.colors[k] || cut.colors.other || cut.colors.Other || "#3a4656";
+    return `<div class="lens"><div class="lbl">${cut.name}</div>` +
+      `<div class="minibar">` + items.map(([k, v]) => `<div data-k="${k}" data-v="${v.toFixed(1)}" style="flex:${v};background:${col(k)}"></div>`).join("") + `</div>` +
+      `<div class="lenschips">` + items.filter(([, v]) => v >= 1).map(([k, v]) =>
+        `<span><i style="background:${col(k)}"></i>${k} <b>${v.toFixed(1)}%</b></span>`).join("") + `</div></div>`;
+  }).join("");
+  $(elId).querySelectorAll(".minibar div").forEach(seg => {
+    seg.addEventListener("mousemove", e => showTT(e, `<b>${seg.dataset.k}</b>${seg.dataset.v}% of vault`));
+    seg.addEventListener("mouseleave", hideTT);
+  });
 }
 function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stack = $(stackId);
@@ -499,13 +582,17 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   if (mEth) {
     $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnEthSpark"), (mEth.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    renderAlloc("earnEthStack", "earnEthAlloc", flattenAllocations(mEth.d), ethTvl, "eth", ctx);
-  } else $("earnEthHead").textContent = "EarnETH — Mellow API unavailable";
+    const ethRowsA = flattenAllocations(mEth.d);
+    renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
+    renderLenses("lensEth", ethRowsA, "eth");
+  } else { $("earnEthHead").textContent = "EarnETH — Mellow API unavailable"; $("lensEth").innerHTML = ""; }
   if (mUsd) {
     $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnUsdSpark"), (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    renderAlloc("earnUsdStack", "earnUsdAlloc", flattenAllocations(mUsd.d), usdTvl, "usd", ctx);
-  } else $("earnUsdHead").textContent = "EarnUSD — Mellow API unavailable";
+    const usdRowsA = flattenAllocations(mUsd.d);
+    renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
+    renderLenses("lensUsd", usdRowsA, "usd");
+  } else { $("earnUsdHead").textContent = "EarnUSD — Mellow API unavailable"; $("lensUsd").innerHTML = ""; }
 
   // peer look-through
   const chips = (r, label) => {
