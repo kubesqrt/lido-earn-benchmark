@@ -5,65 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Lido Earn — Live Vault Benchmark Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
-    --page: #0c0f14; --surface: #14181f; --raised: #191e26;
-    --ink: #eef1f6; --ink-2: #aab3c0; --muted: #6d7684;
-    --grid: #222937; --axis: #2e3642; --ring: rgba(255,255,255,0.08);
+    --page: #0b0d11; --surface: #111419; --raised: #161a21;
+    --ink: #e8ebf0; --ink-2: #a6afbc; --muted: #687180;
+    --grid: #1f2530; --axis: #2b323e; --ring: rgba(255,255,255,0.07);
     --accent: #3987e5; --aqua: #199e70; --yellow: #c98500; --violet: #9085e9; --red: #e66767;
-    --peer-bar: #3a4656; --crit: #e05252; --warn: #fab219; --good: #2fb54d;
+    --peer-bar: #39434f; --crit: #e05252; --warn: #fab219; --good: #2fb54d;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html { background: var(--page); }
-  body { background: radial-gradient(1200px 400px at 50% -100px, #16233a 0%, var(--page) 60%);
-         color: var(--ink); margin: 0; min-height: 100vh;
-         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 34px 22px 70px; }
-  .eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
-  h1 { font-size: 30px; margin: 6px 0 4px; letter-spacing: -.015em; font-weight: 700; text-wrap: balance; }
-  .sub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 12px; }
-  .sub b { color: var(--ink); }
-  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
-       font-weight: 700; margin: 40px 0 6px; display: flex; align-items: center; gap: 10px; }
+  body { background: var(--page); color: var(--ink); margin: 0; min-height: 100vh;
+         font: 400 14px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 30px 22px 70px; }
+  .eyebrow { font: 500 10.5px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 24px; margin: 8px 0 4px; letter-spacing: -.01em; font-weight: 600; text-wrap: balance; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; }
+  .sub b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 12px; }
+  h2 { font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+       margin: 42px 0 6px; display: flex; align-items: center; gap: 12px; }
   h2::after { content: ""; flex: 1; height: 1px; background: var(--grid); }
   .note { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; max-width: 74ch; }
   .note b { color: var(--ink); }
-  .status { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; font-size: 11.5px; }
-  .status span { border: 1px solid var(--ring); border-radius: 999px; padding: 2.5px 11px; color: var(--ink-2); background: var(--surface); }
+  .status { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 10px; font: 400 10.5px/1.6 var(--mono); }
+  .status span { border: 1px solid var(--ring); border-radius: 3px; padding: 2px 9px; color: var(--ink-2); background: var(--surface); }
   .status span.ok::before { content: "● "; color: var(--good); }
   .status span.wait::before { content: "● "; color: var(--muted); }
   .status span.err::before { content: "● "; color: var(--crit); }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0 4px; }
-  .tile { background: linear-gradient(180deg, var(--raised), var(--surface)); border: 1px solid var(--ring);
-          border-radius: 10px; padding: 15px 17px; }
-  .tile .k { font-size: 12px; color: var(--ink-2); }
-  .tile .v { font-size: 30px; font-weight: 700; margin: 3px 0 0; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 16px 0 4px; }
+  .tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 4px; padding: 13px 15px; }
+  .tile .k { font: 500 10.5px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .tile .v { font: 600 25px/1.15 var(--mono); margin: 5px 0 0; letter-spacing: -.02em; }
   .tile .v.up { color: var(--good); } .tile .v.down { color: var(--crit); }
-  .tile .d { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
-  .tile .d b { color: var(--ink); font-weight: 600; }
-  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 18px; margin: 10px 0 0; }
-  .cardhead { font-size: 14.5px; font-weight: 650; }
-  .cardhead small { color: var(--muted); font-weight: 400; font-size: 11.5px; margin-left: 8px; }
+  .tile .d { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .tile .d b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 11.5px; }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 4px; padding: 16px 18px; margin: 10px 0 0; }
+  .cardhead { font-size: 13.5px; font-weight: 600; }
+  .cardhead small { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 8px; font-family: var(--mono); }
   .scroll { overflow-x: auto; }
-  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .bar { transition: filter .1s; cursor: default; }
+  svg text { font-family: var(--mono); }
+  .bar { transition: filter .1s; cursor: pointer; }
   .bar:hover { filter: brightness(1.25); }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 12px; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
-       text-transform: uppercase; letter-spacing: .07em; padding: 7px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  tr:hover td { background: rgba(255,255,255,0.025); }
-  tr.lido td { background: rgba(57,135,229,0.10); font-weight: 600; }
-  tr.lido:hover td { background: rgba(57,135,229,0.16); }
-  .chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; }
-  .flag { font-size: 11.5px; font-weight: 600; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
-  .flag.crit { color: #ff9d9d; background: rgba(224,82,82,0.14); border: 1px solid rgba(224,82,82,0.25); }
-  .flag.warn { color: #ffd47e; background: rgba(250,178,25,0.10); border: 1px solid rgba(250,178,25,0.22); }
-  .flag.ok   { color: #7fd794; background: rgba(47,181,77,0.10); border: 1px solid rgba(47,181,77,0.22); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 12px; }
+  th { text-align: left; color: var(--muted); font: 500 10px/1.5 var(--mono);
+       text-transform: uppercase; letter-spacing: .09em; padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  td.num, th.num { text-align: right; }
+  td.num { font-family: var(--mono); font-size: 11.5px; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr.lido td { background: rgba(57,135,229,0.09); font-weight: 500; }
+  tr.lido td.num { font-weight: 600; }
+  tr.lido:hover td { background: rgba(57,135,229,0.14); }
+  .chip { display: inline-block; width: 9px; height: 9px; border-radius: 1.5px; margin-right: 7px; }
+  .flag { font: 500 10.5px/1.5 var(--mono); letter-spacing: .02em; white-space: nowrap; }
+  .flag::before { content: "▪ "; }
+  .flag.crit { color: #ff8f8f; }
+  .flag.warn { color: #f2c05c; }
+  .flag.ok   { color: #6fcf87; }
   .yld { border-bottom: 1px dotted var(--muted); cursor: help; color: var(--ink); }
-  .yld.neg { color: #ff9d9d; }
+  .yld.neg { color: #ff8f8f; }
+  tr.pick td { cursor: pointer; }
+  .caret { display: inline-block; width: 13px; color: var(--muted); font-size: 10px; transition: color .15s; }
+  .caret::before { content: "▸"; }
+  tr.open .caret { color: var(--accent); }
+  tr.open .caret::before { content: "▾"; }
+  tr.detail td, tr.detail:hover td { background: rgba(255,255,255,0.02); white-space: normal; padding: 0 10px; }
+  tr.lido + tr.detail td, tr.lido + tr.detail:hover td { background: rgba(57,135,229,0.06); font-weight: 400; }
+  .dpanel { border-left: 2px solid var(--accent); padding: 11px 4px 13px 13px; margin: 7px 0; }
+  .dpanel .dhead { font-size: 13px; font-weight: 650; }
+  .dpanel .src { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 8px; }
+  .dpanel .dnote { color: var(--ink-2); font-size: 12.5px; margin: 6px 0 0; max-width: 70ch; }
+  .dpanel table { margin-top: 8px; font-size: 12.5px; max-width: 640px; }
+  .dpanel td, .dpanel th { padding: 5px 10px; }
+  .dpanel .dfoot { margin-top: 9px; font-size: 12px; }
+  .dpanel a { color: var(--accent); text-decoration: none; }
+  .dpanel a:hover { text-decoration: underline; }
+  .levctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0; font-size: 12px; color: var(--ink-2); }
+  .levctl .lbl { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .levctl .hint { color: var(--muted); font-size: 11.5px; }
+  .seg { display: inline-flex; border: 1px solid var(--ring); border-radius: 3px; overflow: hidden; background: var(--surface); }
+  .seg button { background: none; border: 0; border-left: 1px solid var(--ring); color: var(--ink-2); cursor: pointer;
+                font: 500 11.5px/1 var(--mono); padding: 6px 12px; }
+  .seg button:first-child { border-left: 0; }
+  .seg button:hover:not(.on) { background: rgba(255,255,255,0.045); color: var(--ink); }
+  .seg button.on { background: rgba(57,135,229,0.20); color: var(--ink); }
   .lens { margin-top: 14px; }
   .lens .lbl { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
   .minibar { display: flex; gap: 2px; height: 16px; border-radius: 4px; overflow: hidden; }
@@ -83,15 +114,15 @@
   .stackbar div { min-width: 2px; transition: filter .1s; }
   .stackbar div:hover { filter: brightness(1.3); }
   .tt { position: fixed; pointer-events: none; background: var(--raised); border: 1px solid var(--ring);
-        border-radius: 7px; padding: 8px 11px; font-size: 12.5px; box-shadow: 0 6px 22px rgba(0,0,0,.45);
-        opacity: 0; transition: opacity .08s; z-index: 50; max-width: 300px; white-space: nowrap; color: var(--ink); }
-  .tt b { display: block; }
+        border-radius: 3px; padding: 8px 11px; font-size: 12px; box-shadow: 0 6px 22px rgba(0,0,0,.5);
+        opacity: 0; transition: opacity .08s; z-index: 50; max-width: 320px; white-space: nowrap; color: var(--ink); }
+  .tt b { display: block; font-family: var(--mono); font-size: 11.5px; font-weight: 600; margin-bottom: 2px; }
   .meth { font-size: 13px; color: var(--ink-2); max-width: 78ch; }
   .meth code { background: rgba(255,255,255,0.06); border-radius: 4px; padding: 1px 6px; font-size: 12px; color: var(--ink); }
   .spark { height: 44px; margin-top: 8px; }
-  .peerchips { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; margin-top: 8px; }
-  .peerchips span { border: 1px solid var(--ring); border-radius: 6px; padding: 3.5px 10px; color: var(--ink-2); background: var(--raised); }
-  .peerchips b { color: var(--ink); }
+  .peerchips { display: flex; flex-wrap: wrap; gap: 7px; font-size: 11.5px; margin-top: 8px; }
+  .peerchips span { border: 1px solid var(--ring); border-radius: 3px; padding: 3px 9px; color: var(--ink-2); background: var(--raised); }
+  .peerchips b { color: var(--ink); font-family: var(--mono); font-size: 11px; }
   footer { margin-top: 40px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--grid); padding-top: 14px; }
   .skel { color: var(--muted); font-size: 13px; padding: 14px 0; }
   @keyframes pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
@@ -109,11 +140,11 @@
   <div class="tiles" id="tiles"><div class="skel">Loading benchmark data&hellip;</div></div>
 
   <h2>ETH-denominated vaults</h2>
-  <p class="note"><b>stETH APR</b> (live from Lido's API) is the passive baseline &mdash; a Lido user's opportunity cost. Aave/Spark WETH lending is the floor. EarnETH's spread over stETH is what curation earns for its risk stack: leverage, LRT, carry, bridge.</p>
+  <p class="note"><b>stETH APR</b> (live from Lido's API) is the passive baseline &mdash; a Lido user's opportunity cost. Aave/Spark WETH lending is the floor. EarnETH's spread over stETH is what curation earns for its risk stack: leverage, LRT, carry, bridge. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="ethBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="ethTable"></div></div>
 
   <h2>USD-denominated vaults</h2>
-  <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything above ~5.5% embeds leverage, credit or young-chain risk somewhere.</p>
+  <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything above ~5.5% embeds leverage, credit or young-chain risk somewhere. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="usdBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="usdTable"></div></div>
 
   <h2>90-day APY trend</h2>
@@ -124,7 +155,11 @@
   </div>
 
   <h2>Where Lido Earn's money is right now</h2>
-  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield / carry</b> is priced from live market rates: direct positions show the underlying's current rate; levered loops show <b>carry per turn of leverage</b> (net APY = s&middot;L &minus; b&middot;(L&minus;1); on-chain leverage isn't published &mdash; hover for the formula inputs). Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
+  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield / carry</b> is priced from live market rates: direct positions show the underlying's current rate; levered loops show an <b>estimated total net APY</b> at the leverage assumption you pick below (net = s&middot;L &minus; b&middot;(L&minus;1); on-chain leverage isn't published &mdash; hover any value for its components and its contribution to vault APY). Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
+  <div class="levctl"><span class="lbl">Loop leverage assumption</span>
+    <div class="seg" id="levSeg"><button data-l="2">2&times;</button><button data-l="3" class="on">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
+    <span class="hint">applied to every levered position: net = s&middot;L &minus; b&middot;(L&minus;1)</span>
+  </div>
   <div class="grid2">
     <div class="card">
       <div class="cardhead" id="earnEthHead">EarnETH <small>loading&hellip;</small></div>
@@ -157,7 +192,7 @@
   <h2>Methodology</h2>
   <div class="card meth">
     <p><b style="color:var(--ink)">Benchmark stack:</b> tier 1 = passive baseline (stETH APR / sUSDS); tier 2 = market beta (TVL-weighted top vaults, vaults.fyi-style); tier 3 = named-peer median (this board). All APYs net-of-fees as reported by each source. <b style="color:var(--ink)">Risk adjustment:</b> <code>spread / &sigma;</code>, where &sigma; = standard deviation of daily APY over the last 90 days (computed here from the same histories) &mdash; note &sigma; understates tail risk for credit and bridge exposures, so overlay the allocation flags.</p>
-    <p><b style="color:var(--ink)">Live sources:</b> DefiLlama <code>yields.llama.fi/chart/&#123;pool&#125;</code> per pool &middot; Mellow <code>api.mellow.finance/v1/chain/1/core-vaults/&#123;vault&#125;/data</code> + <code>/timeweighted-apy</code> &middot; Lido <code>eth-api.lido.fi/v1/protocol/steth/apr/last</code> &middot; Seven Seas <code>api.sevenseas.capital</code>. All fetched client-side; nothing stored, no keys.</p>
+    <p><b style="color:var(--ink)">Live sources:</b> DefiLlama <code>yields.llama.fi/chart/&#123;pool&#125;</code> per pool &middot; Mellow <code>api.mellow.finance/v1/chain/1/core-vaults/&#123;vault&#125;/data</code> + <code>/timeweighted-apy</code> &middot; Lido <code>eth-api.lido.fi/v1/protocol/steth/apr/last</code> &middot; Seven Seas <code>api.sevenseas.capital</code>. Row click-throughs fetch on demand: Morpho <code>api.morpho.org/graphql</code> (V1 + V2 vaults) &middot; Yearn <code>ydaemon.yearn.fi</code> &middot; Fluid Lite <code>api.instadapp.io</code> / <code>api.fluid-lite.instadapp.ai</code>. All fetched client-side; nothing stored, no keys.</p>
   </div>
 
   <footer>Live benchmark board &middot; refresh to refetch &middot; built for curation analysis &middot; not investment advice.</footer>
@@ -171,38 +206,97 @@ const VAULTS = {
   earnETH: { addr: "0x6a37725ca7f4CE81c004c955f7280d5C704a249e" },
   earnUSD: { addr: "0x014e6DA8F283C4aF65B2AA0f201438680A004452" },
 };
+// allocSource — click-through live-strategy adapter per vault:
+//   t:"morpho"   Morpho V1 MetaMorpho vault (api.morpho.org/graphql, vaultByAddress)
+//   t:"morphoV2" Morpho V2 vault (same endpoint, vaultV2s + adapters/positions)
+//   t:"yearn"    Yearn v3 (ydaemon.yearn.fi/1/vaults/{addr})
+//   t:"seven"    ether.fi Liquid — reuses the Seven Seas fetch already on the page (k: eth|usd)
+//   t:"fluidEth"/"fluidUsd" Fluid Lite (api.instadapp.io / api.fluid-lite.instadapp.ai)
+//   t:"none"     no public allocation API — note + DeBank link where the address is known
+// Addresses resolved 2026-07 against each API and cross-checked by symbol + TVL.
+const MM_NOTE = "Money market, not a curated vault — the pool itself is the whole strategy; the APY on the board is the live supply rate.";
+const XC_NOTE = "Cross-chain vault — allocation not exposed through a public API wired here; DefiLlama series only.";
 const POOL_IDS = {
-  "Lido stETH":              { id: "747c1d2a-c668-4682-b9f9-296708a3dd90", tag: "benchmark · plain staking", grp: "eth" },
-  "ether.fi Liquid ETH":     { id: "b86d4934-2e75-415a-bdd2-e28143d72491", tag: "curated · levered Aave", grp: "eth", peer: true },
-  "Fluid Lite ETH":          { id: "e72916f7-a2d1-47ad-a4b9-2b054337cfd6", tag: "pure looper · wstETH+weETH", grp: "eth", peer: true },
-  "Steakhouse ETH (Morpho)": { id: "eed40ce3-ca1a-4433-b3e1-0689ed33d5cd", tag: "unlevered wstETH/WETH lend", grp: "eth", peer: true },
-  "Gauntlet WETH Prime":     { id: "eaa7b496-512f-442f-be1f-9d8909442e53", tag: "unlevered lend + weETH", grp: "eth", peer: true },
-  "Yearn v3 WETH-1":         { id: "2b840e0a-2823-4972-9bfc-8b766c90374b", tag: "multi-strategy classic", grp: "eth", peer: true },
-  "Galaxy WETH Quality":     { id: "8ae91608-6de0-4445-a456-3db2c2ab18a5", tag: "Galaxy curated · Morpho V2", grp: "eth", peer: true },
-  "autoETH (Auto Finance)":  { id: "e9a686bf-21ed-4f78-82be-cd32625c4725", tag: "autopool rotator (ex-Tokemak)", grp: "eth", peer: true },
-  "Upshift hgETH":           { id: "bb925c10-033a-488d-90c1-595001b5656e", tag: "levered rsETH · APY self-reported", grp: "eth" },
-  "Origin OETH":             { id: "423681e3-4787-40ce-ae43-e9f67c5269b3", tag: "automated · mostly staking", grp: "eth" },
-  "Spark WETH (lend)":       { id: "24195b31-d749-445f-bf9e-b65aa025ebdd", tag: "floor · plain lend", grp: "eth" },
-  "Aave v3 WETH (lend)":     { id: "e880e828-ca59-4ec6-8d4f-27182a4dc23d", tag: "floor · plain lend", grp: "eth" },
-  "ether.fi Liquid USD":     { id: "7c12f175-37bc-41db-967a-1d7f1f4a23c4", tag: "curated · multi-chain RWA", grp: "usd", peer: true },
-  "Smokehouse USDC":         { id: "f8d7740c-4cef-420e-a944-1b7caffde643", tag: "high-yield · RWA/credit", grp: "usd", peer: true },
-  "Gauntlet USDC Frontier":  { id: "ff113246-f6e0-4e10-b92c-abd3cd1d7dd6", tag: "frontier tier", grp: "usd", peer: true },
-  "Gauntlet USDC Prime V2":  { id: "71b34441-5a46-431b-a9b3-8c081cd0d74c", tag: "prime tier · Morpho V2", grp: "usd", peer: true },
-  "Hyperithm USDC Apex":     { id: "5a55b869-de6e-42ba-9091-6ee0e02525c2", tag: "aggressive mandate · Morpho V2", grp: "usd", peer: true },
-  "Wintermute USDC Select":  { id: "d2a99602-b0c7-4f6a-a329-82bdaad3df0c", tag: "Armitage by Wintermute", grp: "usd", peer: true },
-  "kpk USDC Prime":          { id: "052e3f85-e489-4bee-9e34-c7898ef1d449", tag: "kpk (ex-karpatkey)", grp: "usd", peer: true },
-  "Sentora RLUSD Main":      { id: "2e53bb82-f13f-4157-a3bf-b1a91b94b6a4", tag: "RLUSD-denominated · Morpho V2", grp: "usd", peer: true },
-  "Yearn v3 USDC-1":         { id: "7d89af7a-24c9-4292-aa38-7c71b05fbd6d", tag: "multi-strategy classic", grp: "usd", peer: true },
-  "Gauntlet USD Alpha (Base)": { id: "c043062f-fcd6-47aa-b063-70691dc25c1c", tag: "cross-protocol meta-vault · Base", grp: "usd", peer: true },
-  "Steakhouse USDC":         { id: "b55f43a8-f444-4cd8-a3a4-0a4e786ba566", tag: "prime tier · BTC collat", grp: "usd" },
-  "Sentora PYUSD Main":      { id: "699f25fe-09f4-4f82-8f58-baa5b0af8fa4", tag: "PYUSD markets + rewards", grp: "usd", peer: true },
-  "Sentora PRIME":           { id: "f569e486-da2a-41ef-8bfe-1a4db0d1d268", tag: "credit / PRIME", grp: "usd" },
-  "Maple syrupUSDC":         { id: "43641cf5-a92e-416b-bce9-27113d3c0db6", tag: "institutional credit", grp: "usd", peer: true },
-  "Ethena sUSDe":            { id: "66985a81-9c51-46ca-9977-42b4fe7bc6df", tag: "basis trade", grp: "usd" },
-  "Sky sUSDS (SSR)":         { id: "d8c4eff5-c8a9-46fc-a888-057c4c668e72", tag: "benchmark · governance rate", grp: "usd" },
-  "Fluid USDC (lend)":       { id: "4438dabc-7f0c-430b-8136-2722711ae663", tag: "plain lend", grp: "usd" },
-  "Fluid Lite USDC":         { id: "488f06db-5a36-450e-9ba9-b4321be39c7c", tag: "pure looper", grp: "usd", peer: true },
-  "Aave v3 USDC (lend)":     { id: "aa70268e-4b52-42bf-a116-608b370f9501", tag: "floor · plain lend", grp: "usd" },
+  "Lido stETH":              { id: "747c1d2a-c668-4682-b9f9-296708a3dd90", tag: "benchmark · plain staking", grp: "eth",
+                               allocSource: { t: "none", note: "Benchmark, not a vault — the strategy is Ethereum staking via Lido; the APR is the whole story." } },
+  "ether.fi Liquid ETH":     { id: "b86d4934-2e75-415a-bdd2-e28143d72491", tag: "curated · levered Aave", grp: "eth", peer: true,
+                               allocSource: { t: "seven", k: "eth", addr: "0xf0bb20865277aBd641a307eCe5Ee04E79073416C" } },
+  "Fluid Lite ETH":          { id: "e72916f7-a2d1-47ad-a4b9-2b054337cfd6", tag: "pure looper · wstETH+weETH", grp: "eth", peer: true,
+                               allocSource: { t: "fluidEth", addr: "0xA0D3707c569ff8C87FA923d3823eC5D81c98Be78" } },
+  "Steakhouse ETH (Morpho)": { id: "eed40ce3-ca1a-4433-b3e1-0689ed33d5cd", tag: "unlevered wstETH/WETH lend", grp: "eth", peer: true,
+                               allocSource: { t: "morpho", addr: "0xBEEF050ecd6a16c4e7bfFbB52Ebba7846C4b8cD4" } },
+  "Gauntlet WETH Prime":     { id: "eaa7b496-512f-442f-be1f-9d8909442e53", tag: "unlevered lend + weETH", grp: "eth", peer: true,
+                               allocSource: { t: "morpho", addr: "0x2371e134e3455e0593363cBF89d3b6cf53740618" } },
+  "Yearn v3 WETH-1":         { id: "2b840e0a-2823-4972-9bfc-8b766c90374b", tag: "multi-strategy classic", grp: "eth", peer: true,
+                               allocSource: { t: "yearn", addr: "0xc56413869c6CDf96496f2b1eF801fEDBdFA7dDB0" } },
+  "Galaxy WETH Quality":     { id: "8ae91608-6de0-4445-a456-3db2c2ab18a5", tag: "Galaxy curated · Morpho V2", grp: "eth", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x1878805799273d10aE96a58201A6f5254CF9824F" } },
+  "autoETH (Auto Finance)":  { id: "e9a686bf-21ed-4f78-82be-cd32625c4725", tag: "autopool rotator (ex-Tokemak)", grp: "eth", peer: true,
+                               allocSource: { t: "none", addr: "0x0A2b94F6871c1D7A32Fe58E1ab5e6deA2f114E56", note: "Autopool rotator — the destination mix isn't exposed through a public allocation API." } },
+  "Upshift hgETH":           { id: "bb925c10-033a-488d-90c1-595001b5656e", tag: "levered rsETH · APY self-reported", grp: "eth",
+                               allocSource: { t: "none", note: "Levered rsETH strategy; APY is self-reported on-chain and there is no public allocation API." } },
+  "Origin OETH":             { id: "423681e3-4787-40ce-ae43-e9f67c5269b3", tag: "automated · mostly staking", grp: "eth",
+                               allocSource: { t: "none", addr: "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3", note: "Mostly direct beacon-chain staking plus a small AMO — Origin publishes the split on its own analytics page, not a machine API." } },
+  "Moonwell Flagship ETH · Base": { id: "4280d14b-b720-41e2-afab-a1760dbb0d54", tag: "Block Analitica + B.Protocol · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "yoETH · Base":            { id: "2070ceaf-eedb-4795-9ede-6841ec515e1a", tag: "YO cross-protocol aggregator · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "IPOR Fusion ETH · Base":  { id: "a1dc9b8c-bf6b-4132-8578-a501c063a3c8", tag: "lending optimizer · Base", grp: "eth", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "mRe7ETH · Optimism":      { id: "7380a44d-da0e-460b-b149-0c2f2f271316", tag: "Re7 via Midas · NAV-reported APY", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "Steakhouse ETH · Monad":  { id: "22f041f7-8313-43c2-b319-bcf70f5ee2aa", tag: "Steakhouse · Monad · flat reward leg", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "K3 Earn WETH · Monad":    { id: "951e4e49-9760-49a3-aea9-bd832384219f", tag: "K3 Euler cluster · Monad · MON rewards", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "Gauntlet WETH · Katana":  { id: "23a8c413-1595-4380-9a0b-e8eb04907a90", tag: "Gauntlet · Katana · flat reward leg", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "Yearn vbETH · Katana":    { id: "23efa6ee-dbe8-4590-9857-5e0a4bcfc9ed", tag: "Yearn canonical · Katana", grp: "eth", allocSource: { t: "none", note: XC_NOTE } },
+  "Spark WETH (lend)":       { id: "24195b31-d749-445f-bf9e-b65aa025ebdd", tag: "floor · plain lend", grp: "eth",
+                               allocSource: { t: "none", addr: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987", note: MM_NOTE } },
+  "Aave v3 WETH (lend)":     { id: "e880e828-ca59-4ec6-8d4f-27182a4dc23d", tag: "floor · plain lend", grp: "eth",
+                               allocSource: { t: "none", addr: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", note: MM_NOTE } },
+  "ether.fi Liquid USD":     { id: "7c12f175-37bc-41db-967a-1d7f1f4a23c4", tag: "curated · multi-chain RWA", grp: "usd", peer: true,
+                               allocSource: { t: "seven", k: "usd", addr: "0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C" } },
+  "Smokehouse USDC":         { id: "f8d7740c-4cef-420e-a944-1b7caffde643", tag: "high-yield · RWA/credit", grp: "usd", peer: true,
+                               allocSource: { t: "morpho", addr: "0xBEeFFF209270748ddd194831b3fa287a5386f5bC" } },
+  "Gauntlet USDC Frontier":  { id: "ff113246-f6e0-4e10-b92c-abd3cd1d7dd6", tag: "frontier tier", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e" } },
+  "Gauntlet USDC Prime V2":  { id: "71b34441-5a46-431b-a9b3-8c081cd0d74c", tag: "prime tier · Morpho V2", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0" } },
+  "Hyperithm USDC Apex":     { id: "5a55b869-de6e-42ba-9091-6ee0e02525c2", tag: "aggressive mandate · Morpho V2", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x093272C07700d3cA5301C3Bf9B3A392624179E2F" } },
+  "Wintermute USDC Select":  { id: "d2a99602-b0c7-4f6a-a329-82bdaad3df0c", tag: "Armitage by Wintermute", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0xA2EAaD0D586cF9FD73bb2c09cF6A7E3e187D68cd" } },
+  "kpk USDC Prime":          { id: "052e3f85-e489-4bee-9e34-c7898ef1d449", tag: "kpk (ex-karpatkey)", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6" } },
+  "Sentora RLUSD Main":      { id: "2e53bb82-f13f-4157-a3bf-b1a91b94b6a4", tag: "RLUSD-denominated · Morpho V2", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0x6dC58a0FdfC8D694e571DC59B9A52EEEa780E6bf" } },
+  "Yearn v3 USDC-1":         { id: "7d89af7a-24c9-4292-aa38-7c71b05fbd6d", tag: "multi-strategy classic", grp: "usd", peer: true,
+                               allocSource: { t: "yearn", addr: "0xBe53A109B494E5c9f97b9Cd39Fe969BE68BF6204" } },
+  "Gauntlet USD Alpha (Base)": { id: "c043062f-fcd6-47aa-b063-70691dc25c1c", tag: "cross-protocol meta-vault · Base", grp: "usd", peer: true,
+                               allocSource: { t: "none", addr: "0x000000000001CdB57E58Fa75Fe420a0f4D6640D5", note: "Aera-based cross-protocol meta-vault on Base — per-venue split isn't exposed through a public API." } },
+  "Steakhouse USDC":         { id: "b55f43a8-f444-4cd8-a3a4-0a4e786ba566", tag: "prime tier · BTC collat", grp: "usd",
+                               allocSource: { t: "morpho", addr: "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB" } },
+  "Sentora PYUSD Main":      { id: "699f25fe-09f4-4f82-8f58-baa5b0af8fa4", tag: "PYUSD markets + rewards", grp: "usd", peer: true,
+                               allocSource: { t: "morphoV2", addr: "0xb576765fB15505433aF24FEe2c0325895C559FB2" } },
+  "Sentora PRIME":           { id: "f569e486-da2a-41ef-8bfe-1a4db0d1d268", tag: "credit / PRIME", grp: "usd",
+                               allocSource: { t: "morphoV2", addr: "0xC21b08C16458202593D4D9B26b9984Ee67b38BbD" } },
+  "Maple syrupUSDC":         { id: "43641cf5-a92e-416b-bce9-27113d3c0db6", tag: "institutional credit", grp: "usd", peer: true,
+                               allocSource: { t: "none", addr: "0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b", note: "Institutional credit book — borrower-level detail lives on Maple's site, not a public allocation API." } },
+  "Ethena sUSDe":            { id: "66985a81-9c51-46ca-9977-42b4fe7bc6df", tag: "basis trade", grp: "usd",
+                               allocSource: { t: "none", addr: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497", note: "Delta-neutral basis book — reserve detail is on Ethena's transparency page, not a public allocation API." } },
+  "Sky sUSDS (SSR)":         { id: "d8c4eff5-c8a9-46fc-a888-057c4c668e72", tag: "benchmark · governance rate", grp: "usd",
+                               allocSource: { t: "none", addr: "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD", note: "Governance-set savings rate — there is no allocation to inspect; the rate is the strategy." } },
+  "Fluid USDC (lend)":       { id: "4438dabc-7f0c-430b-8136-2722711ae663", tag: "plain lend", grp: "usd",
+                               allocSource: { t: "none", addr: "0x9Fb7b4477576Fe5B32be4C1843aFB1e55F251B33", note: MM_NOTE } },
+  "Fluid Lite USDC":         { id: "488f06db-5a36-450e-9ba9-b4321be39c7c", tag: "pure looper", grp: "usd", peer: true,
+                               allocSource: { t: "fluidUsd", addr: "0x273DA948ACa9261043fbdb2a857BC255ECC29012" } },
+  "Aave v3 USDC (lend)":     { id: "aa70268e-4b52-42bf-a116-608b370f9501", tag: "floor · plain lend", grp: "usd",
+                               allocSource: { t: "none", addr: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", note: MM_NOTE } },
+  "Steakhouse USDC · Base":  { id: "ba68527f-8ec2-4c55-827a-8f4673ae047c", tag: "Steakhouse flagship · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Gauntlet USDC Prime · Base": { id: "e0672197-9f3e-4414-bca5-e6b4c90aa469", tag: "Gauntlet flagship · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Smokehouse USDC · Base":  { id: "832c94db-4948-4f14-aa65-af6e737d984e", tag: "Steakhouse BBQ line · Base", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Plasma USD (Veda) · Plasma": { id: "95d4f805-1800-4184-98a0-6e49b3ccad8a", tag: "Plasma-native multi-strategy — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "K3 USDT0 · Plasma":       { id: "93b667e0-edbc-4264-984d-8b078a2fd9b9", tag: "K3 Euler · Plasma-native — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Felix USDC · HyperEVM":   { id: "8622e84a-794b-4b68-aad2-a6a2e0e0d2c7", tag: "MEV Capital · HyperEVM", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Avant savUSD · Avalanche": { id: "c74227a1-e738-4021-bbe1-13363815aecb", tag: "delta-neutral senior tranche · Avalanche", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
+  "Hyperithm USDC · Monad":  { id: "ec6a71a7-41ae-4e72-942f-b4bc99c3b3cb", tag: "Hyperithm · Monad", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
+  "Upshift AUSD · Monad":    { id: "e10580de-1ad2-4bbc-a0e8-ad4db95df4a3", tag: "Upshift · Monad", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
+  "Steakhouse USDC · Katana": { id: "d56ab93e-d48d-44f2-8139-9bb020afc980", tag: "Steakhouse · Katana · flat reward leg", grp: "usd", allocSource: { t: "none", note: XC_NOTE } },
 };
 const TREND = {
   eth: ["Lido stETH", "ether.fi Liquid ETH", "Fluid Lite ETH"],
@@ -251,9 +345,184 @@ function setStatus(name, state, extra) {
 }
 ["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas"].forEach(n => setStatus(n, "wait"));
 async function j(url) { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function gql(query) {
+  const r = await fetch("https://api.morpho.org/graphql", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) });
+  if (!r.ok) throw new Error("Morpho API " + r.status);
+  const d = await r.json();
+  if (d.errors) throw new Error(d.errors[0].message);
+  return d.data;
+}
+const debank = a => "https://debank.com/profile/" + a;
+
+// ---------- click-through live strategy viewer (Feature A) ----------
+let SEVEN = null; // Seven Seas payloads, set by main() — reused by the ether.fi adapter
+function capRows(rows, n) { // keep panels compact: top n, aggregate the tail
+  rows.sort((a, b) => b.pct - a.pct);
+  if (rows.length <= n + 1) return rows;
+  const rest = rows.slice(n).reduce((s, r) => s + r.pct, 0);
+  return [...rows.slice(0, n), { label: "Other positions (" + (rows.length - n) + ")", pct: rest, apy: null }];
+}
+const mktLabel = m => (m.collateralAsset ? m.collateralAsset.symbol : "Idle") + " / " + m.loanAsset.symbol +
+  (m.collateralAsset && m.lltv > 0 ? " · " + (m.lltv / 1e16).toFixed(1) + "% LLTV" : "");
+async function morphoV1Alloc(cfg) {
+  const d = await gql(`{ vaultByAddress(address: "${cfg.addr}", chainId: 1) { name symbol state { totalAssetsUsd netApy allocation { supplyAssetsUsd market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } }`);
+  const v = d.vaultByAddress, st = v.state, tot = st.totalAssetsUsd || 1;
+  let rows = (st.allocation || [])
+    .filter(a => a.supplyAssetsUsd > Math.max(tot * 0.001, 100))
+    .map(a => ({ label: mktLabel(a.market), pct: a.supplyAssetsUsd / tot * 100,
+                 apy: a.market.state ? a.market.state.netSupplyApy * 100 : null }));
+  rows = capRows(rows, 11);
+  const used = rows.reduce((s, r) => s + r.pct, 0);
+  if (used < 99.5) rows.push({ label: "Idle / unallocated", pct: 100 - used, apy: null });
+  return { head: `${v.name} — ${fmt$(tot)} · net APY ${(st.netApy * 100).toFixed(2)}%`,
+           src: "Morpho API · live", rows, link: debank(cfg.addr) };
+}
+async function morphoV2Alloc(cfg) {
+  const d = await gql(`{ vaultV2s(first: 1, where: { address_in: ["${cfg.addr}"], chainId_in: [1] }) { items { name symbol totalAssetsUsd idleAssetsUsd netApy adapters(first: 12) { items { __typename assetsUsd ... on MetaMorphoAdapter { metaMorpho { symbol state { netApy } } } ... on MorphoMarketV1Adapter { positions(first: 24) { items { state { supplyAssetsUsd } market { lltv collateralAsset { symbol } loanAsset { symbol } state { netSupplyApy } } } } } ... on MorphoVaultV2Adapter { innerVault { name symbol } } } } } } }`);
+  const v = d.vaultV2s.items[0];
+  if (!v) throw new Error("vault not found");
+  const tot = v.totalAssetsUsd || 1;
+  let rows = [];
+  (v.adapters.items || []).forEach(ad => {
+    if (ad.positions) (ad.positions.items || []).forEach(p => {
+      const usd = p.state ? +p.state.supplyAssetsUsd : 0;
+      if (usd < Math.max(tot * 0.001, 100)) return;
+      rows.push({ label: mktLabel(p.market), pct: usd / tot * 100,
+                  apy: p.market.state ? p.market.state.netSupplyApy * 100 : null });
+    });
+    else if (ad.metaMorpho) rows.push({ label: "Morpho V1 vault · " + ad.metaMorpho.symbol, pct: (ad.assetsUsd || 0) / tot * 100,
+                                        apy: ad.metaMorpho.state ? ad.metaMorpho.state.netApy * 100 : null });
+    else if (ad.innerVault) rows.push({ label: "Morpho V2 vault · " + (ad.innerVault.symbol || ad.innerVault.name), pct: (ad.assetsUsd || 0) / tot * 100, apy: null });
+  });
+  rows = capRows(rows, 11);
+  if (v.idleAssetsUsd > tot * 0.001) rows.push({ label: "Idle", pct: v.idleAssetsUsd / tot * 100, apy: null });
+  return { head: `${v.name} — ${fmt$(tot)} · net APY ${v.netApy != null ? (v.netApy * 100).toFixed(2) + "%" : "—"}`,
+           src: "Morpho API (V2) · live", rows, link: debank(cfg.addr) };
+}
+async function yearnAlloc(cfg) {
+  const v = await j("https://ydaemon.yearn.fi/1/vaults/" + cfg.addr);
+  let rows = (v.strategies || [])
+    .filter(s => s.details && s.details.debtRatio > 0)
+    .map(s => ({ label: s.name + (s.status && s.status !== "active" ? " · " + s.status : ""),
+                 pct: s.details.debtRatio / 100, apy: s.netAPR != null ? s.netAPR * 100 : null }));
+  rows = capRows(rows, 11);
+  const used = rows.reduce((s, r) => s + r.pct, 0);
+  if (used < 99.5) rows.push({ label: "Unallocated / buffer", pct: 100 - used, apy: null });
+  const netApr = v.apr && v.apr.netAPR != null ? (v.apr.netAPR * 100).toFixed(2) + "%" : "—";
+  return { head: `${v.symbol || "Yearn v3"} — ${v.tvl && v.tvl.tvl ? fmt$(v.tvl.tvl) : "?"} · net APR ${netApr}`,
+           src: "yDaemon · live · % = debt ratio", rows, link: debank(cfg.addr) };
+}
+function sevenAlloc(cfg) {
+  const r = SEVEN && SEVEN[cfg.k];
+  if (!r || !r.Response) throw new Error("Seven Seas feed unavailable this session");
+  const g = r.Response;
+  let rows = (g.real_apy_breakdown || [])
+    .map(a => ({ label: a.protocol + (a.chain && a.chain !== "ethereum" ? " · " + a.chain : ""),
+                 pct: a.allocation * 100, apy: a.apy * 100 }))
+    .filter(a => a.pct > 0.3);
+  rows = capRows(rows, 11);
+  return { head: `ether.fi Liquid ${cfg.k.toUpperCase()} — ${(g.apy * 100).toFixed(2)}% 7d net`,
+           src: "Seven Seas API · live", rows, link: debank(cfg.addr) };
+}
+async function fluidEthAlloc(cfg) {
+  const list = await j("https://api.instadapp.io/v2/mainnet/lite/users/0x0000000000000000000000000000000000000000/vaults");
+  const v = list.find(x => x.vault && x.vault.toLowerCase() === cfg.addr.toLowerCase()) || list[0];
+  if (!v) throw new Error("vault not in Lite API");
+  const NAMES = { aaveV3: "Aave v3", aaveV3Lido: "Aave v3 (Lido market)", compoundV3: "Compound v3", spark: "Spark",
+                  fluidNew: "Fluid", fluidDex: "Fluid DEX", fluidWeETHWstETH: "Fluid weETH/wstETH" };
+  const tvl = +v.vaultTVLInAsset || 1;
+  const rows = [];
+  Object.entries(v.protocolsInfo || {}).forEach(([k, p]) => {
+    const net = +p.netAssets || 0;
+    if (net < tvl * 0.002) return;
+    const s = [p.eETHSupplyYield, p.stETHSupplyYield, p.ethSupplyYield].map(Number).find(x => x > 0);
+    const b = p.wETHBorrowYield != null ? +p.wETHBorrowYield : null;
+    rows.push({ label: (NAMES[k] || k) + " · LST loop · ratio " + (+p.ratio).toFixed(1) + "/" + p.maxRiskRatio,
+                pct: net / tvl * 100,
+                apyText: s != null && b != null ? (s - b >= 0 ? "+" : "") + (s - b).toFixed(2) + "pp/turn" : null });
+  });
+  rows.sort((a, b) => b.pct - a.pct);
+  const used = rows.reduce((s, r) => s + r.pct, 0);
+  if (used < 99.5) rows.push({ label: "Buffer / instant-withdraw reserve", pct: 100 - used, apy: null });
+  const usd = v.token && v.token.price ? fmt$(tvl * v.token.price) : "?";
+  const apy = v.apy && v.apy.apyWithoutFee != null ? (+v.apy.apyWithoutFee).toFixed(2) + "%" : "—";
+  return { head: `Fluid Lite ETH — ${usd} · ${apy} APY · aggregated risk ratio ${(+v.aggregatedRiskRatio).toFixed(1)}/${v.maxAggregatedRiskRatio}`,
+           src: "Instadapp Lite API · live · net position per venue", rows, link: debank(cfg.addr) };
+}
+async function fluidUsdAlloc(cfg) {
+  const r = await j("https://api.fluid-lite.instadapp.ai/lite-usd/vault");
+  if (!r.success || !r.data) throw new Error("Lite USD API shape changed");
+  const d = r.data, dec = 10 ** (+d.underlyingAsset.decimals || 6);
+  const tot = +d.totalAssets / dec || 1;
+  const fusdc = +d.vaultFUSDCValue / dec || 0, idle = +d.vaultUSDCBalance / dec || 0;
+  const deployed = Math.max(tot - fusdc - idle, 0);
+  const rows = [
+    { label: "Strategy-deployed (looped via handler — not itemized by the API)", pct: deployed / tot * 100, apy: null },
+    { label: "fUSDC buffer (Fluid Lending)", pct: fusdc / tot * 100, apy: null },
+    { label: "Idle USDC", pct: idle / tot * 100, apy: null },
+  ].filter(x => x.pct > 0.05);
+  const price = +d.underlyingAsset.price || 1;
+  return { head: `Fluid Lite USD — ${fmt$(tot * price)} · ${(+d.rate / 100).toFixed(2)}% APY (fixed ${(+d.fixedRate / 100).toFixed(2)}% + rewards)`,
+           src: "Fluid Lite API · live", rows, link: debank(cfg.addr) };
+}
+function noneAlloc(cfg, name) {
+  return { head: name + " — no public allocation API",
+           note: cfg.note || "This vault doesn't publish a machine-readable allocation; on-chain holdings are the source of truth.",
+           link: cfg.addr ? debank(cfg.addr) : null };
+}
+const allocCache = {};
+function fetchAlloc(name) {
+  if (!allocCache[name]) allocCache[name] = loadAlloc(name).catch(e => { delete allocCache[name]; throw e; });
+  return allocCache[name];
+}
+async function loadAlloc(name) {
+  if (/^Lido Earn/.test(name))
+    return { head: name + " — this board's own vault",
+             note: "The full live book — positions, flags, lenses and per-position yield — is in the “Where Lido Earn's money is right now” section below." };
+  const cfg = (POOL_IDS[name] || {}).allocSource;
+  if (!cfg) return { head: name, note: "No public allocation API for this vault." };
+  switch (cfg.t) {
+    case "morpho":   return morphoV1Alloc(cfg);
+    case "morphoV2": return morphoV2Alloc(cfg);
+    case "yearn":    return yearnAlloc(cfg);
+    case "seven":    return sevenAlloc(cfg);
+    case "fluidEth": return fluidEthAlloc(cfg);
+    case "fluidUsd": return fluidUsdAlloc(cfg);
+    default:         return noneAlloc(cfg, name);
+  }
+}
+function panelHtml(res) {
+  let h = `<div class="dpanel"><div class="dhead">${res.head}${res.src ? `<span class="src">${res.src}</span>` : ""}</div>`;
+  if (res.note) h += `<p class="dnote">${res.note}</p>`;
+  if (res.rows && res.rows.length) {
+    h += `<table><tr><th>Asset / market</th><th class="num">%</th><th class="num">APY</th></tr>` +
+      res.rows.map(r => `<tr><td>${r.label}</td><td class="num">${r.pct.toFixed(1)}%</td>` +
+        `<td class="num">${r.apyText != null ? r.apyText : r.apy != null ? r.apy.toFixed(2) + "%" : "—"}</td></tr>`).join("") + `</table>`;
+  }
+  if (res.link) h += `<div class="dfoot"><a href="${res.link}" target="_blank" rel="noopener">on-chain portfolio &rarr; DeBank</a></div>`;
+  return h + `</div>`;
+}
+function toggleDetail(tr, forceOpen) {
+  const table = tr.closest("table");
+  const wasOpen = tr.classList.contains("open");
+  const oldPanel = table.querySelector("tr.detail");
+  table.querySelectorAll("tr.open").forEach(r => r.classList.remove("open"));
+  if (oldPanel) oldPanel.remove();
+  if (wasOpen && !forceOpen) return;
+  tr.classList.add("open");
+  const det = document.createElement("tr"); det.className = "detail";
+  const td = document.createElement("td"); td.colSpan = 8; det.appendChild(td);
+  tr.after(det);
+  td.innerHTML = `<div class="dpanel"><div class="skel">Fetching live allocation&hellip;</div></div>`;
+  fetchAlloc(tr.dataset.name)
+    .then(res => { if (det.isConnected) td.innerHTML = panelHtml(res); })
+    .catch(e => { if (det.isConnected) td.innerHTML =
+      `<div class="dpanel"><span class="flag crit">live allocation unavailable — ${(e && e.message) || "fetch failed"}</span></div>`; });
+}
 
 // ---------- charts ----------
-function barChart(el, rows, benchmarks) {
+function barChart(el, rows, benchmarks, tableEl) {
   const W = 920, rowH = 31, padL = 200, padR = 64, padT = 10;
   const H = padT + rows.length * rowH + 28;
   const max = Math.ceil(Math.max(...rows.map(r => r.apy), ...benchmarks.map(b => b.v)) + 0.6);
@@ -276,21 +545,30 @@ function barChart(el, rows, benchmarks) {
   el.innerHTML = s + "</svg>";
   el.querySelectorAll(".bar").forEach(bar => {
     bar.addEventListener("mousemove", e => { const r = rows[+bar.dataset.i];
-      showTT(e, `<b>${r.name}</b>${r.apy.toFixed(2)}% now · ${r.m30 != null ? r.m30.toFixed(2) : "—"}% 30d mean<br>TVL ${fmt$(r.tvl)} · ${r.tag}`); });
+      showTT(e, `<b>${r.name}</b>${r.apy.toFixed(2)}% now · ${r.m30 != null ? r.m30.toFixed(2) : "—"}% 30d mean<br>TVL ${fmt$(r.tvl)} · ${r.tag}<br><span style="color:var(--muted)">click for live allocation</span>`); });
     bar.addEventListener("mouseleave", hideTT);
+    bar.addEventListener("click", () => {
+      if (!tableEl) return;
+      const r = rows[+bar.dataset.i];
+      const tr = tableEl.querySelector(`tr[data-name="${CSS.escape(r.name)}"]`);
+      if (!tr) return;
+      toggleDetail(tr, true);
+      tr.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
   });
 }
 function compTable(el, rows, bench) {
   let h = `<table><tr><th>Vault</th><th>Strategy</th><th class="num">APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
   rows.forEach(r => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
-    h += `<tr${r.lido ? ' class="lido"' : ""}><td>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
+    h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td><span class="caret"></span>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
       `<td class="num">${r.apy.toFixed(2)}%</td><td class="num">${r.m30 != null ? r.m30.toFixed(2) + "%" : "—"}</td>` +
       `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${pp(sp)}</td>` +
       `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td>` +
       `<td class="num">${sh != null ? sh.toFixed(1) : "—"}</td><td class="num">${fmt$(r.tvl)}</td></tr>`;
   });
   el.innerHTML = h + "</table>";
+  el.querySelectorAll("tr.pick").forEach(tr => tr.addEventListener("click", () => toggleDetail(tr)));
 }
 function lineChart(el, legendEl, series, refLine) {
   const W = 530, H = 270, padL = 40, padR = 12, padT = 14, padB = 26;
@@ -351,14 +629,14 @@ function sparkline(el, pts, label) {
 // ---------- allocation flags ----------
 function flagFor(row, vault) {
   const L = row.label, ch = row.chain || "ethereum";
-  if (row.pct >= 25 && row.cat !== "idle") return ["crit", "⚠ " + row.pct.toFixed(0) + "% single position" + (ch !== "ethereum" ? " · " + ch : "")];
-  if (/rseth/i.test(L)) return ["crit", "⚠ LRT + bridge (post-Kelp)"];
-  if (ch !== "ethereum") return ["warn", "⚠ young chain · " + ch];
-  if (vault === "eth" && /earnusd/i.test(L)) return ["warn", "⚠ related-party"];
-  if (/wsteth\/usd/i.test(L)) return ["warn", "⚠ ETH-collat USD borrow"];
-  if (/syrup/i.test(L)) return ["warn", "⚠ credit · 30d stress exit"];
-  if (/ethena|susde/i.test(L)) return ["warn", "⚠ funding-rate carry"];
-  if (row.cat === "idle") return ["ok", "✓ buffer"];
+  if (row.pct >= 25 && row.cat !== "idle") return ["crit", "" + row.pct.toFixed(0) + "% single position" + (ch !== "ethereum" ? " · " + ch : "")];
+  if (/rseth/i.test(L)) return ["crit", "LRT + bridge (post-Kelp)"];
+  if (ch !== "ethereum") return ["warn", "young chain · " + ch];
+  if (vault === "eth" && /earnusd/i.test(L)) return ["warn", "related-party"];
+  if (/wsteth\/usd/i.test(L)) return ["warn", "ETH-collat USD borrow"];
+  if (/syrup/i.test(L)) return ["warn", "credit · 30d stress exit"];
+  if (/ethena|susde/i.test(L)) return ["warn", "funding-rate carry"];
+  if (row.cat === "idle") return ["ok", "buffer"];
   return null;
 }
 function flattenAllocations(data) {
@@ -386,31 +664,46 @@ function flattenAllocations(data) {
   top.full = rows; // unfolded list — used by the exposure lenses
   return top;
 }
-// per-position yield: direct positions → live market rate of the underlying;
-// levered loops → carry per turn of leverage (net APY = s·L − b·(L−1); leverage isn't public)
+// per-position yield (Feature B): direct positions → live market rate of the underlying;
+// levered loops → components {s, b} so total net APY = s·L − b·(L−1) can be recomputed
+// at the user-selected leverage assumption without refetching.
+let LOOP_LEV = 3; // segmented control above the allocation cards
+let refreshAllocYields = () => {}; // bound in main() once data is loaded
 function yieldEst(row, vault, ctx) {
   const L = row.label, ch = (row.chain || "ethereum").toLowerCase();
   const b = k => ctx.borrow[BORROW[k]];
-  const rate = (v, tip) => v == null ? null : { text: v.toFixed(2) + "%", tip };
-  const spread = (earn, earnLbl, cost, costLbl) => (earn == null || cost == null) ? null :
-    { text: (earn - cost >= 0 ? "+" : "") + (earn - cost).toFixed(2) + "pp/turn", neg: earn - cost < 0,
-      tip: `${earnLbl} ${earn.toFixed(2)}% − ${costLbl} ${cost.toFixed(2)}% · net APY = s·L − b·(L−1)` };
+  const rate = (v, tip) => v == null ? null : { kind: "rate", v, tip };
+  const loop = (s, sLbl, bb, bLbl) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl };
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
-    ? spread(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)")
-    : spread(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)");
-  if (/rseth\/eth/i.test(L)) return spread(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)");
-  if (/wsteth\/usd/i.test(L)) return spread(ctx.earnUsd, "USD yield (≈earnUSD)", b("aaveUSDT"), "USDT borrow est.");
+    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)")
+    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)");
+  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)");
+  if (/wsteth\/usd/i.test(L)) return loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("aaveUSDT"), "USDT borrow est. (Aave)");
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (14d TW)");
-  if (/syrupusdt\/usdt0/i.test(L)) return spread(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`);
-  if (/levered ethena/i.test(L)) return spread(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""));
+  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`);
+  if (/levered ethena/i.test(L)) return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""));
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
   if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
   if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
   if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live");
   if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live");
   if (/morpho wsteth\/weth/i.test(L)) return null;
-  if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return { text: "0%", tip: "unallocated — earns nothing" };
+  if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated — earns nothing");
   return null;
+}
+// render one yield cell at the current leverage assumption; pct = position share of the vault
+function yieldCell(y, pct) {
+  if (!y) return "—";
+  if (y.kind === "rate") {
+    const tip = `${y.tip}<br>≈ ${(pct * y.v / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share, unlevered)`;
+    return `<span class="yld" data-tip="${tip}">${y.v.toFixed(2)}%</span>`;
+  }
+  const Lv = LOOP_LEV, carry = y.s - y.b, net = y.s * Lv - y.b * (Lv - 1);
+  const tip = `s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl}` +
+    `<br>carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp per turn · assumed L = ${Lv}×` +
+    `<br>net = s·L − b·(L−1) = ${net.toFixed(2)}%` +
+    `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
+  return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${tip}">${net.toFixed(2)}% @${Lv}×</span>`;
 }
 // ---------- exposure lenses: same book, three cuts ----------
 const LENS_COLORS = {
@@ -480,7 +773,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     rows.map((r, i) => { const f = flagFor(r, vault); const y = ctx ? yieldEst(r, vault, ctx) : null;
       return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${r.label}</td>` +
       `<td class="num">${r.pct.toFixed(1)}%</td><td class="num">${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : "—"}</td>` +
-      `<td class="num">${y ? `<span class="yld${y.neg ? " neg" : ""}" data-tip="${y.tip}">${y.text}</span>` : "—"}</td>` +
+      `<td class="num">${yieldCell(y, r.pct)}</td>` +
       `<td>${f ? `<span class="flag ${f[0]}">${f[1]}</span>` : ""}</td></tr>`; }).join("") + "</table>";
   $(tableId).querySelectorAll(".yld").forEach(el => {
     el.addEventListener("mousemove", e => showTT(e, `<b>${el.textContent}</b>${el.dataset.tip}`));
@@ -559,9 +852,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   $("tiles").innerHTML = tiles.length ? tiles.map(t => `<div class="tile"><div class="k">${t.k}</div><div class="v ${t.c}">${t.v}</div><div class="d">${t.d}</div></div>`).join("")
     : '<div class="skel">Mellow API unavailable — Earn tiles hidden.</div>';
 
-  // bars + tables
-  if (ethRows.length) { barChart($("ethBars"), ethRows, [{ v: ETH_BENCH, label: "stETH" }]); compTable($("ethTable"), ethRows, ETH_BENCH); }
-  if (usdRows.length) { barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS" }, { v: 3.79, label: "T-bill" }]); compTable($("usdTable"), usdRows, USD_BENCH); }
+  // bars + tables (bars and rows click through to each vault's live allocation)
+  SEVEN = seven;
+  if (ethRows.length) { compTable($("ethTable"), ethRows, ETH_BENCH); barChart($("ethBars"), ethRows, [{ v: ETH_BENCH, label: "stETH" }], $("ethTable")); }
+  if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS" }, { v: 3.79, label: "T-bill" }], $("usdTable")); }
 
   // trends (last 90d slices)
   const trendPts = n => hist[n] ? hist[n].slice(-90).map(p => ({ d: p.d, v: p.v })) : null;
@@ -579,20 +873,26 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     rsETH: auxApy("rsETH (Kelp)"), syrupUSDT: auxApy("Maple syrupUSDT"), sparkUSDC: auxApy("SparkLend USDC"),
     syrupUSDC: auxApy("Maple syrupUSDC"), sUSDe: auxApy("Ethena sUSDe"), sentora: auxApy("Sentora PYUSD Main"),
   };
+  let ethRowsA = null, usdRowsA = null;
   if (mEth) {
     $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnEthSpark"), (mEth.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    const ethRowsA = flattenAllocations(mEth.d);
+    ethRowsA = flattenAllocations(mEth.d);
     renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
     renderLenses("lensEth", ethRowsA, "eth");
   } else { $("earnEthHead").textContent = "EarnETH — Mellow API unavailable"; $("lensEth").innerHTML = ""; }
   if (mUsd) {
     $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
     sparkline($("earnUsdSpark"), (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
-    const usdRowsA = flattenAllocations(mUsd.d);
+    usdRowsA = flattenAllocations(mUsd.d);
     renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
     renderLenses("lensUsd", usdRowsA, "usd");
   } else { $("earnUsdHead").textContent = "EarnUSD — Mellow API unavailable"; $("lensUsd").innerHTML = ""; }
+  // leverage assumption control re-renders both allocation tables from cached data (no refetch)
+  refreshAllocYields = () => {
+    if (ethRowsA) renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
+    if (usdRowsA) renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
+  };
 
   // peer look-through
   const chips = (r, label) => {
@@ -609,6 +909,14 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   $("peerEth").innerHTML = chips(seven.eth, "ether.fi Liquid ETH");
   $("peerUsd").innerHTML = chips(seven.usd, "ether.fi Liquid USD");
 })();
+
+// loop-leverage segmented control (Feature B) — recomputes the yield column live, no refetch
+$("levSeg").querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
+  if (+btn.dataset.l === LOOP_LEV) return;
+  LOOP_LEV = +btn.dataset.l;
+  $("levSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === btn));
+  refreshAllocYields();
+}));
 </script>
 </body>
 </html>
