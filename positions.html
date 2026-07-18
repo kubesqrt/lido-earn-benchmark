@@ -116,11 +116,11 @@
     <div class="poshead"><span class="pid">E5</span><span class="pname">Aave levered rsETH/ETH</span><span class="pstats">11.9% · equity <b>$18.4M</b> · L <b>12.17×</b> · net <b>6.92%</b></span><span class="verdict v-remove">REMOVE via Kelp queue</span></div>
     <div class="flow">
       <div class="step src"><div class="t">rsETH (KelpDAO LRT)</div><div class="d">staking + restaking</div><div class="m">~2.43% intrinsic</div></div>
-      <div class="step act"><div class="t">Supply on Aave</div><div class="d">rsETH E-mode 93/95/1</div><div class="m">C ≈ $224M gross ≈ 7–8% of ALL rsETH</div></div>
+      <div class="step act"><div class="t">Supply on Aave</div><div class="d">rsETH E-mode — now FROZEN (LTV set to 0)</div><div class="m">C ≈ $224M ≈ 24% of ALL rsETH (supply shrank post-exploit)</div></div>
       <div class="step act"><div class="t">Borrow WETH 2.01%</div><div class="d">widest carry in the book: +0.42pp/turn</div><div class="m">12 turns deep</div></div>
-      <div class="step rsk"><div class="t">Exit ≈ queue-only</div><div class="d">DEX at par: ~$250k. $2M sells at −70%. Real exit: Kelp queue 7–10d</div><div class="m">April: this asset froze the vault 27 days</div></div>
+      <div class="step rsk"><div class="t">Exit ≈ trapped</div><div class="d">DEX: −36% at 500 rsETH. Market frozen on Aave. Par exit ≈ 17 Kelp-queue cycles</div><div class="m">≈ 4–6 MONTHS to fully unwind</div></div>
     </div>
-    <div class="liq">at 12.17×, a 0.8% move in rsETH's internal rate ≈ −10% of equity. Oracle = Kelp's internal rate: a backing hole reprices instantly and Aave freezes, it doesn't liquidate.</div>
+    <div class="liq">at 12.17× the position's health factor is <b>1.035</b> — a hair above the 1.0 liquidation line — on a FROZEN market it can't easily grow out of. A 0.8% move in rsETH's internal rate ≈ −10% of equity. Verified on-chain 2026-07-18.</div>
     <div class="riskline"><span>bigger than the day it blew up (11.9% vs 9%)</span><span>marginal carry vs wstETH loop ≈ +10bp of vault APY — the whole reward for the tail</span></div>
   </div>
 
@@ -153,19 +153,19 @@
       <div class="step act"><div class="t">Borrow USDT0 ~3.95%</div><div class="d">at 90.8% utilization — ON the kink; printed ~7% on Jul 14</div><div class="m">D ≈ $86M ≈ most of the chain's free USDT0</div></div>
       <div class="step rsk"><div class="t">Exit runs through 3 doors</div><div class="d">sell/unwind syrup → USDT0 → bridge off Plasma (chain TVL −89% from peak)</div><div class="m">days calm · weeks stressed · vs a 48h SLA</div></div>
     </div>
-    <div class="liq">carry = 4.15 − 3.95 ≈ <b>+0.20pp/turn</b> (inverted Jul 14). A 0.5–0.6% syrup NAV markdown at this gearing trips the DAO's 1% first-loss trigger alone. Oracle = Chainlink NAV feed — honest, but no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset).</div>
+    <div class="liq">carry is <b>−0.88pp/turn TODAY</b> (net −0.73%) — USDT0 borrow spiked past syrupUSDT's 4.15% yield. Best case even at the 92% kink is only +0.06pp/turn (net ~+4.5% ≈ unlevered syrup + 35bp). A 0.5–0.6% NAV markdown trips the DAO's 1% trigger alone. Oracle = Chainlink NAV feed — no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset). Verified on-chain 2026-07-18.</div>
     <div class="riskline"><span>position IS its own exit market</span><span>USDT0 = LayerZero OFT, 2-of-2 DVN (Kelp failure category)</span><span>net 4.30% ≈ unlevered mainnet syrup + ~15bp — the stack earns almost nothing</span></div>
   </div>
 
   <div class="card pos">
     <div class="poshead"><span class="pid">U2·U3·U4</span><span class="pname">Levered Ethena (Plasma 10.0% · Mantle 9.7% · mainnet 3.4%)</span><span class="pstats">L <b>5.86× / 9.00× / 5.66×</b> · net on-chain <b>−2.99% / +4.34% / −3.15%</b>*</span><span class="verdict v-reduce">TRIM / REMOVE pre-Aug-11 / UNLEVER</span></div>
     <div class="flow">
-      <div class="step src"><div class="t">sUSDe</div><div class="d">staked USDe — funding + backing yield</div><div class="m">~3.98% intrinsic</div></div>
-      <div class="step act"><div class="t">Supply in correlated e-mode</div><div class="d">borrow USDe against it (liquidation risk ≈ nil, carry risk ≈ everything)</div><div class="m">USDe borrow ~2.39%</div></div>
-      <div class="step yld"><div class="t">Carry × L + chain subsidies</div><div class="d">+1.6pp/turn on paper; XPL (Plasma) / MNT (Mantle) rewards on top</div><div class="m">*on-chain measurement excludes off-chain rewards — under re-verification</div></div>
-      <div class="step rsk"><div class="t">The cliffs</div><div class="d">Mantle MNT program ends ~Aug 11 (exit door: $0.11M free USDe) · funding regimes invert in days (Oct-25: −$8.3B USDe supply)</div><div class="m">7-day sUSDe cooldown vs 48h SLA</div></div>
+      <div class="step src"><div class="t">Collateral: USDe + sUSDe MIX</div><div class="d">on-chain it's ~36–51% RAW USDe (earns 0) + sUSDe — NOT the pure sUSDe the disclosures imply</div><div class="m">blended collateral yield dragged low</div></div>
+      <div class="step act"><div class="t">Borrow STABLECOINS</div><div class="d">USDT / USDC / USDT0 at 3.5–5.0% — verified vUSDe debt = 0, so they do NOT borrow USDe</div><div class="m">the disclosure ("borrow USDe") ≠ the on-chain reality</div></div>
+      <div class="step rsk"><div class="t">Net carry is NEGATIVE</div><div class="d">low collateral yield − expensive stable debt, levered</div><div class="m">mainnet −3.08% · Plasma −7.6% (spiked rate) · verified on-chain</div></div>
+      <div class="step rsk"><div class="t">Only rewards rescue it</div><div class="d">XPL (Plasma) / MNT (Mantle) subsidies — Mantle program ends ~Aug 11, exit door $0.11M</div><div class="m">7d sUSDe cooldown vs 48h SLA</div></div>
     </div>
-    <div class="riskline"><span>Mantle at 9× is a subsidy trade with a dated expiry</span><span>only ~39% of USDe supply is staked — sUSDe 3.98% implies the backing earns ~1.6% gross: the basis trade is functionally dead right now</span></div>
+    <div class="riskline"><span>Mantle at 9× is a subsidy trade with a dated expiry</span><span>disclosure says "sUSDe collateral, borrow USDe" — on-chain it's raw-USDe collateral + stablecoin debt, a genuine strategy-vs-reality gap</span><span>only ~39% of USDe supply is staked; the basis trade is functionally dead</span></div>
   </div>
 
   <div class="card pos">
