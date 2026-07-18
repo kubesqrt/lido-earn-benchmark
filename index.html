@@ -171,10 +171,10 @@
   </div>
 
   <h2><span class="idx">04</span>Where Lido Earn's money is right now</h2>
-  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield / carry</b> is priced from live market rates: direct positions show the underlying's current rate; levered loops show an <b>estimated total net APY</b> at the leverage assumption you pick below (net = s&middot;L &minus; b&middot;(L&minus;1); on-chain leverage isn't published &mdash; hover any value for its components and its contribution to vault APY). Flags are rule-based: single-position concentration &ge;25%, young-chain deployment, LRT/bridge dependency, credit-asset exit windows, related-party holdings, funding-rate carry.</p>
-  <div class="levctl"><span class="lbl">Loop leverage assumption</span>
-    <div class="seg" id="levSeg"><button data-l="2">2&times;</button><button data-l="3" class="on">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
-    <span class="hint">applied to every levered position: net = s&middot;L &minus; b&middot;(L&minus;1)</span>
+  <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield</b>: direct positions show the underlying's live rate; levered loops default to <b>measured on-chain leverage</b> (aToken/debt-token balances read 2026-07-18; equities cross-check the Mellow API within &plusmn;0.23%) with exact net APY; the 2&ndash;6&times; buttons are what-if overrides (net = s&middot;L &minus; b&middot;(L&minus;1)). Hover any value for components and vault-APY contribution. Flags are rule-based: concentration &ge;25%, young-chain, LRT/bridge, credit exit windows, related-party, funding carry.</p>
+  <div class="levctl"><span class="lbl">Loop leverage</span>
+    <div class="seg" id="levSeg"><button data-l="m" class="on">measured</button><button data-l="2">2&times;</button><button data-l="3">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
+    <span class="hint">measured = real on-chain balances (Jul 18) · buttons = what-if</span>
   </div>
   <div class="grid2">
     <div class="card">
@@ -717,21 +717,25 @@ function flattenAllocations(data) {
 // per-position yield (Feature B): direct positions → live market rate of the underlying;
 // levered loops → components {s, b} so total net APY = s·L − b·(L−1) can be recomputed
 // at the user-selected leverage assumption without refetching.
-let LOOP_LEV = 3; // segmented control above the allocation cards
+let LOOP_LEV = "m"; // "m" = measured on-chain (default) or a numeric what-if from the segmented control
 let refreshAllocYields = () => {}; // bound in main() once data is loaded
 function yieldEst(row, vault, ctx) {
   const L = row.label, ch = (row.chain || "ethereum").toLowerCase();
   const b = k => ctx.borrow[BORROW[k]];
   const rate = (v, tip) => v == null ? null : { kind: "rate", v, tip };
-  const loop = (s, sLbl, bb, bLbl) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl };
+  const loop = (s, sLbl, bb, bLbl, meas) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas };
+  // measured on-chain 2026-07-18 (overnight/actual-leverage.md): {L, net APY %, note}
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)")
-    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)");
-  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)");
-  if (/wsteth\/usd/i.test(L)) return loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("aaveUSDT"), "USDT borrow est. (Aave)");
+    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15 })
+    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27 });
+  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92 });
+  if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
+    ? loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.62, net: 1.36 })
+    : loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.56, net: 2.05 });
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (14d TW)");
-  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`);
-  if (/levered ethena/i.test(L)) return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""));
+  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30 });
+  if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, note: "excl. Merit/sats" };
+    return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
   if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
   if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
@@ -748,7 +752,16 @@ function yieldCell(y, pct) {
     const tip = `${y.tip}<br>≈ ${(pct * y.v / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share, unlevered)`;
     return `<span class="yld" data-tip="${tip}">${y.v.toFixed(2)}%</span>`;
   }
-  const Lv = LOOP_LEV, carry = y.s - y.b, net = y.s * Lv - y.b * (Lv - 1);
+  const carry = y.s - y.b;
+  if (LOOP_LEV === "m" && y.meas) {
+    const m = y.meas;
+    const tip = `MEASURED on-chain 2026-07-18: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)` +
+      `<br>s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp/turn` +
+      (m.note ? `<br>${m.note}` : "") +
+      `<br>≈ ${(pct * m.net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
+    return `<span class="yld${m.net < 0 ? " neg" : ""}" data-tip="${tip}">${m.net.toFixed(2)}% @${m.L}×</span>`;
+  }
+  const Lv = LOOP_LEV === "m" ? 3 : LOOP_LEV, net = y.s * Lv - y.b * (Lv - 1);
   const tip = `s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl}` +
     `<br>carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp per turn · assumed L = ${Lv}×` +
     `<br>net = s·L − b·(L−1) = ${net.toFixed(2)}%` +
@@ -999,8 +1012,9 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
 
 // loop-leverage segmented control (Feature B) — recomputes the yield column live, no refetch
 $("levSeg").querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
-  if (+btn.dataset.l === LOOP_LEV) return;
-  LOOP_LEV = +btn.dataset.l;
+  const v = btn.dataset.l === "m" ? "m" : +btn.dataset.l;
+  if (v === LOOP_LEV) return;
+  LOOP_LEV = v;
   $("levSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === btn));
   refreshAllocYields();
 }));
