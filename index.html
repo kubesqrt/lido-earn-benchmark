@@ -168,14 +168,21 @@
   <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything above ~5.5% embeds leverage, credit or young-chain risk somewhere. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="usdBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="usdTable"></div></div>
 
-  <h2><span class="idx">03</span>90-day APY trend</h2>
+  <h2><span class="idx">03</span>RWA &amp; tokenized-credit yields <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">candidate assets for an EarnRWA vault</span></h2>
+  <p class="note">Live rates for the RWA universe a Lido RWA sleeve would draw from, grouped by risk tier. The columns that matter for curation aren't the APY &mdash; they're <b>backing</b>, <b>redemption terms</b> (vs a 48h vault SLA), and <b>oracle type</b> (attested-NAV assets are the xUSD failure pattern in a suit). <span style="color:var(--good)">Green</span> = tokenized T-bills (rate floor); <span style="color:var(--yellow)">amber</span> = institutional credit; <span style="color:var(--red)">red</span> = synthetic/frontier. The tier ledger below the table is static research; APY/TVL are live.</p>
+  <div class="tiles" id="rwaTiles"></div>
+  <div class="card"><div class="scroll" id="rwaTable"><div class="skel">Loading RWA rates&hellip;</div></div>
+    <p class="note" style="margin:14px 0 0;font-size:12px"><b>Curation read:</b> tokenized T-bills yield ~3.4&ndash;3.6% &mdash; at/below sUSDS, so they add diversification, not yield. The sellable premium is credit &amp; term (Maple ~4.8%, Midas ~10%+). USD.ai (7.2%) and Avant (8%) are the frontier: real yield, but USD.ai carries ~48% single-borrower concentration and a ~30-day redemption queue &mdash; a satellite (capped, via dated Pendle PTs), never an anchor. Every non-T-bill line here prices on an <b>attested NAV</b>, not a market &mdash; the oracle-deviation workflow is the whole ballgame.</p>
+  </div>
+
+  <h2><span class="idx">04</span>90-day APY trend</h2>
   <p class="note">Peer histories from DefiLlama; Lido Earn series computed from Mellow&rsquo;s lp-price snapshots (rolling 7-day annualized). Single-day sampling spikes (reward harvests) are median-filtered on all series. Earn vaults still aren&rsquo;t listed on DefiLlama &mdash; a transparency gap worth closing.</p>
   <div class="grid2">
     <div class="card"><div class="legend" id="ethTrendLegend"></div><div class="scroll" id="ethTrend"><div class="skel">Loading&hellip;</div></div></div>
     <div class="card"><div class="legend" id="usdTrendLegend"></div><div class="scroll" id="usdTrend"><div class="skel">Loading&hellip;</div></div></div>
   </div>
 
-  <h2><span class="idx">04</span>Where Lido Earn's money is right now</h2>
+  <h2><span class="idx">05</span>Where Lido Earn's money is right now</h2>
   <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield</b>: direct positions show the underlying's live rate; levered loops default to <b>measured on-chain leverage</b> (aToken/debt-token balances read 2026-07-18; equities cross-check the Mellow API within &plusmn;0.23%) with exact net APY; the 2&ndash;6&times; buttons are what-if overrides (net = s&middot;L &minus; b&middot;(L&minus;1)). Hover any value for components and vault-APY contribution. Flags are rule-based: concentration &ge;25%, young-chain, LRT/bridge, credit exit windows, related-party, funding carry.</p>
   <div class="grid2">
     <div class="card"><div class="cardhead">EarnETH — vault stats <small>on-chain + Mellow API</small></div><div class="vstats" id="vstatsEth"><div class="skel">reading chain&hellip;</div></div></div>
@@ -200,21 +207,21 @@
     </div>
   </div>
 
-  <h2><span class="idx">05</span>Exposure lenses</h2>
+  <h2><span class="idx">06</span>Exposure lenses</h2>
   <p class="note">The same book, cut three ways &mdash; <b>by chain</b> (settlement/bridge risk), <b>by venue</b> (protocol counterparty), and <b>by risk factor</b> (what actually has to go wrong to lose money). Concentrations that look fine position-by-position show up here: correlated positions share one lens segment.</p>
   <div class="grid2">
     <div class="card"><div class="cardhead">EarnETH</div><div id="lensEth"><div class="skel">Loading&hellip;</div></div></div>
     <div class="card"><div class="cardhead">EarnUSD</div><div id="lensUsd"><div class="skel">Loading&hellip;</div></div></div>
   </div>
 
-  <h2><span class="idx">06</span>Peer look-through</h2>
+  <h2><span class="idx">07</span>Peer look-through</h2>
   <div class="card">
     <p class="note" style="margin-bottom:4px">ether.fi Liquid vaults' live allocations (Seven Seas API) &mdash; the closest competitor's book, side by side with Earn's.</p>
     <div class="peerchips" id="peerEth"><span>Loading&hellip;</span></div>
     <div class="peerchips" id="peerUsd"></div>
   </div>
 
-  <h2><span class="idx">07</span>Methodology</h2>
+  <h2><span class="idx">08</span>Methodology</h2>
   <div class="card meth">
     <p><b style="color:var(--ink)">Benchmark stack:</b> tier 1 = passive baseline (stETH APR / sUSDS); tier 2 = market beta (TVL-weighted top vaults, vaults.fyi-style); tier 3 = named-peer median (this board). All APYs net-of-fees as reported by each source. <b style="color:var(--ink)">Risk adjustment:</b> <code>spread / &sigma;</code>, where &sigma; = standard deviation of daily APY over the last 90 days (computed here from the same histories) &mdash; note &sigma; understates tail risk for credit and bridge exposures, so overlay the allocation flags.</p>
     <p><b style="color:var(--ink)">Live sources:</b> DefiLlama <code>yields.llama.fi/chart/&#123;pool&#125;</code> per pool &middot; Mellow <code>api.mellow.finance/v1/chain/1/core-vaults/&#123;vault&#125;/data</code> + <code>/timeweighted-apy</code> &middot; Lido <code>eth-api.lido.fi/v1/protocol/steth/apr/last</code> &middot; Seven Seas <code>api.sevenseas.capital</code>. Row click-throughs fetch on demand: Morpho <code>api.morpho.org/graphql</code> (V1 + V2 vaults) &middot; Yearn <code>ydaemon.yearn.fi</code> &middot; Fluid Lite <code>api.instadapp.io</code> / <code>api.fluid-lite.instadapp.ai</code>. All fetched client-side; nothing stored, no keys.</p>
@@ -333,6 +340,24 @@ const SERIES = ["var(--accent)", "var(--aqua)", "var(--yellow)", "var(--violet)"
 const BASELINE_COL = "var(--muted)";
 const SLOTS = ["#3987e5","#199e70","#c98500","#9085e9","#e66767","#d55181","#d95926","#5f9ec7"];
 const SEVENSEAS = { eth: "0xf0bb20865277aBd641a307eCe5Ee04E79073416C", usd: "0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C" };
+// RWA / tokenized-credit universe — live APY/TVL from DefiLlama; metadata is researched (2026-07-18).
+// tier: tbill | credit | frontier · redeem: liquidity vs a 48h vault SLA · oracle: nav (attested) | market · flag: curation caution
+const RWA = [
+  { n: "Sky sUSDS", id: "d8c4eff5-c8a9-46fc-a888-057c4c668e72", tier: "tbill", chain: "Ethereum", backing: "Sky savings rate (governance-set)", redeem: "instant", oracle: "rate", note: "the on-chain USD floor / benchmark" },
+  { n: "BlackRock BUIDL", id: "b663ca59-c7e6-4435-ae4a-28d339ce6a15", tier: "tbill", chain: "Ethereum", backing: "US T-bills + repo (BlackRock/Securitize)", redeem: "T+0 via Circle", oracle: "nav", note: "the blue-chip tokenized MMF; KYC transfer-gated" },
+  { n: "Ondo USDY", id: "ac61ee82-2fe4-4f9b-a9cd-7fb33f598859", tier: "tbill", chain: "Ethereum", backing: "short T-bills + bank deposits", redeem: "~T+0, transferable", oracle: "nav", note: "freely transferable yield-note; deepest T-bill token" },
+  { n: "Superstate USTB", id: "1910847a-f8b5-40ce-a1ab-1dafdded5fbb", tier: "tbill", chain: "Ethereum", backing: "US T-bills (Superstate)", redeem: "T+1, allowlisted", oracle: "nav", flag: "warn", note: "allowlisted transfers break composability — access via wrapper" },
+  { n: "Ondo OUSG", id: "7436db9b-2872-46c8-81a2-da6baff902b7", tier: "tbill", chain: "Ethereum", backing: "BUIDL + T-bill ETFs", redeem: "T+0, KYC", oracle: "nav", note: "instant-mint tokenized treasuries" },
+  { n: "Circle USYC", id: "448a64ff-06fd-4e56-b63c-03662ac39010", tier: "tbill", chain: "Ethereum", backing: "reverse-repo (Hashnote/Circle)", redeem: "T+0", oracle: "nav", note: "Circle-owned; CEX-collateral rails" },
+  { n: "Maple syrupUSDC", id: "43641cf5-a92e-416b-bce9-27113d3c0db6", tier: "credit", chain: "Ethereum", backing: "overcollat. institutional loans (BTC/ETH)", redeem: "~1d normal / 30d stress", oracle: "nav", note: "the liquid credit anchor; Earn already touches Maple" },
+  { n: "Maple syrupUSDT", id: "8edfdf02-cdbb-43f7-bca6-954e5fe56813", tier: "credit", chain: "Ethereum", backing: "same book, USDT", redeem: "~1d normal / 30d stress", oracle: "nav", note: "USDT sibling" },
+  { n: "Midas mF-ONE", id: "7d491f26-a03b-4eca-ae2c-e068391b15d3", tier: "credit", chain: "Ethereum", backing: "Fasanara fintech/SME/RE credit, 140+ originators", redeem: "monthly window, KYC", oracle: "nav", flag: "warn", note: "the yield engine; Liechtenstein-regulated, Steakhouse-curated" },
+  { n: "Midas mHYPER", id: "ebb3a954-fd67-4a3b-ac2f-3a8c7be9200b", tier: "credit", chain: "Ethereum", backing: "managed Hyperliquid/HLP yield fund", redeem: "windowed", oracle: "nav", flag: "warn", note: "HLP-linked — perp/MM risk inside an RWA wrapper" },
+  { n: "USD.ai sUSDai", id: "712ce948-bd9e-4f4a-8916-b72c447f7578", tier: "frontier", chain: "Arbitrum", backing: "GPU-collateralized loans (UCC Art.7 receipts) + T-bills", redeem: "~30d QEV auction queue", oracle: "nav", flag: "crit", note: "48% single-borrower; untested collateral; satellite only, via dated PTs" },
+  { n: "Avant savUSD", id: "c74227a1-e738-4021-bbe1-13363815aecb", tier: "frontier", chain: "Avalanche", backing: "delta-neutral, senior tranche", redeem: "windowed", oracle: "nav", flag: "warn", note: "structured/basis exposure in a senior wrapper" },
+  { n: "Multipli RWAUSDI", id: "8863fc1e-2029-481d-a625-06abbcba9e11", tier: "frontier", chain: "Ethereum", backing: "mixed RWA/quant", redeem: "windowed", oracle: "nav", flag: "warn", note: "newer, thinner track record" },
+];
+const RWA_TIER = { tbill: { c: "var(--good)", lbl: "T-BILL" }, credit: { c: "var(--yellow)", lbl: "CREDIT" }, frontier: { c: "var(--red)", lbl: "FRONTIER" } };
 // auxiliary rate pools (not shown as table rows — used to price Earn's positions)
 const AUX_POOLS = {
   "rsETH (Kelp)":     "33c732f6-a78d-41da-af5b-ccd9fa5e52d5",
@@ -893,6 +918,36 @@ function riskOf(r, vault) {
   if (/sparklend|sentora|morpho|lend/i.test(L)) return "Plain lending";
   return "Other";
 }
+function renderRwa(statById, usdBench) {
+  const rows = RWA.map(r => ({ ...r, s: statById(r.id) })).filter(r => r.s);
+  // tiles: one per tier — median live APY + count + aggregate TVL
+  const tierAgg = {};
+  rows.forEach(r => { (tierAgg[r.tier] = tierAgg[r.tier] || []).push(r); });
+  $("rwaTiles").innerHTML = ["tbill", "credit", "frontier"].filter(t => tierAgg[t]).map(t => {
+    const g = tierAgg[t], apys = g.map(r => r.s.apy).sort((a, b) => a - b);
+    const med = apys[apys.length >> 1], tvl = g.reduce((s, r) => s + r.s.tvl, 0);
+    const T = RWA_TIER[t];
+    return `<div class="tile" style="border-top-color:${T.c}"><div class="k" style="color:${T.c}">${T.lbl} · ${g.length} assets</div>` +
+      `<div class="v">${med.toFixed(2)}%</div><div class="d">median APY · <b>${fmt$(tvl)}</b> tracked TVL</div></div>`;
+  }).join("");
+  const order = { tbill: 0, credit: 1, frontier: 2 };
+  rows.sort((a, b) => order[a.tier] - order[b.tier] || b.s.apy - a.s.apy);
+  let h = `<table><tr><th>Asset</th><th>Tier</th><th class="num">APY</th><th class="num">30d</th><th class="num">σ90d</th><th class="num">vs sUSDS</th><th class="num">TVL</th><th>Backing</th><th>Redemption</th><th>Oracle</th></tr>`;
+  rows.forEach(r => {
+    const T = RWA_TIER[r.tier], sp = r.s.apy - usdBench;
+    const fl = r.flag === "crit" ? "crit" : r.flag === "warn" ? "warn" : null;
+    h += `<tr title="${r.note.replace(/"/g, "'")}">` +
+      `<td><span class="chip" style="background:${T.c}"></span>${r.n}<span style="color:var(--muted);font-size:10px;font-family:var(--mono)"> · ${r.chain}</span></td>` +
+      `<td><span class="flag ${fl || ""}" style="${fl ? "" : "color:" + T.c}">${T.lbl}</span></td>` +
+      `<td class="num">${r.s.apy.toFixed(2)}%</td><td class="num">${r.s.m30.toFixed(2)}%</td><td class="num">${r.s.sigma.toFixed(2)}</td>` +
+      `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${(sp >= 0 ? "+" : "") + sp.toFixed(2)}pp</td>` +
+      `<td class="num">${fmt$(r.s.tvl)}</td>` +
+      `<td style="white-space:normal;max-width:230px;color:var(--ink-2)">${r.backing}</td>` +
+      `<td style="color:${/30d|monthly|window|queue/i.test(r.redeem) ? "var(--warn)" : "var(--ink-2)"}">${r.redeem}</td>` +
+      `<td style="color:${r.oracle === "nav" ? "var(--warn)" : "var(--ink-2)"}">${r.oracle === "nav" ? "attested NAV" : r.oracle === "rate" ? "governance rate" : "market"}</td></tr>`;
+  });
+  $("rwaTable").innerHTML = h + "</table>";
+}
 function renderLenses(elId, rows, vault) {
   rows = rows.full || rows;
   const cuts = [
@@ -941,7 +996,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   $("asof").textContent = "fetched " + new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
   // per-pool histories → stats computed client-side (fast: small parallel calls, no 10MB dump)
-  const fetchList = [...Object.entries(POOL_IDS).map(([n, c]) => [n, c.id]), ...Object.entries(AUX_POOLS)];
+  const baseList = [...Object.entries(POOL_IDS).map(([n, c]) => [n, c.id]), ...Object.entries(AUX_POOLS)];
+  const baseIds = new Set(baseList.map(e => e[1]));
+  const rwaExtra = RWA.filter(r => !baseIds.has(r.id)).map(r => ["rwa:" + r.n, r.id]);
+  const fetchList = [...baseList, ...rwaExtra];
   let done = 0;
   const pStats = Promise.all(fetchList.map(([n, id]) =>
     j("https://yields.llama.fi/chart/" + id)
@@ -976,6 +1034,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
     const last = pts[pts.length - 1], last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
     return { apy: last.v, m30: mean(last30), sigma: stdev(last90), tvl: last.tvl }; };
+  const idToName = {}; fetchList.forEach(([n, id]) => { if (!(id in idToName)) idToName[id] = n; });
+  const statById = id => stat(idToName[id]);
 
   const ethTvl = mEth ? (mEth.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / 1e8, 0) : null;
   const usdTvl = mUsd ? (mUsd.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / 1e8, 0) : null;
@@ -999,6 +1059,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   tk("USDe borrow", borrowMap[BORROW.usdeEth]); tk("USDT0·Plasma borrow", borrowMap[BORROW.usdt0Plasma]);
   tk("EarnETH", ethApy); tk("EarnUSD", usdApy);
   $("ticker").innerHTML = tick.join("");
+  renderRwa(statById, USD_BENCH);
   // KPI tiles
   const ethPeerMed = median(ethRows.filter(r => r.peer).map(r => r.apy));
   const usdPeerMed = median(usdRows.filter(r => r.peer).map(r => r.apy));
