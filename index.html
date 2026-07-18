@@ -95,6 +95,11 @@
   .seg button:first-child { border-left: 0; }
   .seg button:hover:not(.on) { background: rgba(255,255,255,0.045); color: var(--ink); }
   .seg button.on { background: rgba(57,135,229,0.20); color: var(--ink); }
+  .vstats { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 12px 16px; margin-top: 12px; min-width: 0; }
+  .vstats .s .k { font: 500 9.5px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .vstats .s .v { font: 600 15px/1.3 var(--mono); margin-top: 2px; }
+  .vstats .s .v.neg { color: #ff8f8f; } .vstats .s .v.pos { color: var(--good); }
+  .vstats .s .d { font: 400 10.5px/1.4 var(--sans); color: var(--ink-2); margin-top: 1px; overflow-wrap: anywhere; }
   .lens { margin-top: 14px; }
   .lens .lbl { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
   .minibar { display: flex; gap: 2px; height: 16px; border-radius: 4px; overflow: hidden; }
@@ -172,6 +177,10 @@
 
   <h2><span class="idx">04</span>Where Lido Earn's money is right now</h2>
   <p class="note">Pulled live from Mellow's API &mdash; the same source the Lido app reads &mdash; flattened through subvaults to vault-level share. <b>Yield</b>: direct positions show the underlying's live rate; levered loops default to <b>measured on-chain leverage</b> (aToken/debt-token balances read 2026-07-18; equities cross-check the Mellow API within &plusmn;0.23%) with exact net APY; the 2&ndash;6&times; buttons are what-if overrides (net = s&middot;L &minus; b&middot;(L&minus;1)). Hover any value for components and vault-APY contribution. Flags are rule-based: concentration &ge;25%, young-chain, LRT/bridge, credit exit windows, related-party, funding carry.</p>
+  <div class="grid2">
+    <div class="card"><div class="cardhead">EarnETH — vault stats <small>on-chain + Mellow API</small></div><div class="vstats" id="vstatsEth"><div class="skel">reading chain&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnUSD — vault stats <small>on-chain + Mellow API</small></div><div class="vstats" id="vstatsUsd"><div class="skel">reading chain&hellip;</div></div></div>
+  </div>
   <div class="levctl"><span class="lbl">Loop leverage</span>
     <div class="seg" id="levSeg"><button data-l="m" class="on">measured</button><button data-l="2">2&times;</button><button data-l="3">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
     <span class="hint">measured = real on-chain balances (Jul 18) · buttons = what-if</span>
@@ -361,7 +370,7 @@ function setStatus(name, state, extra) {
   statusEl.innerHTML = Object.entries(sources).map(([n, s]) =>
     `<span class="${s.state}">${n}${s.extra ? " · " + s.extra : ""}</span>`).join("");
 }
-["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas"].forEach(n => setStatus(n, "wait"));
+["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas","On-chain flows"].forEach(n => setStatus(n, "wait"));
 async function j(url) { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
 async function gql(query) {
   const r = await fetch("https://api.morpho.org/graphql", {
@@ -768,6 +777,89 @@ function yieldCell(y, pct) {
     `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
   return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${tip}">${net.toFixed(2)}% @${Lv}×</span>`;
 }
+// ---------- vault stats: on-chain flows + queue + freshness ----------
+// getLogs-capable + CORS-open free RPCs (both ~10k-block range); rotated to dodge rate limits
+const LOG_RPCS = ["https://eth.drpc.org", "https://eth-mainnet.public.blastapi.io"];
+const HEAD_RPCS = ["https://eth.drpc.org", "https://1rpc.io/eth", "https://ethereum-rpc.publicnode.com"];
+async function rpcOn(urls, method, params) {
+  for (const u of urls) {
+    try { const r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      const jj = await r.json(); if (jj && jj.result !== undefined) return jj.result;
+    } catch (e) {}
+  }
+  return null;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const XFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const ZERO32 = "0x" + "0".repeat(64);
+const FEE_RECIPIENT = "0xccf2daba8bb04a232a2fda0d01010d4ef6c69b85"; // Current Meta Treasury — fee mints, excluded from deposit flow
+async function tokenFlows7d(token, blk) {
+  let mint = 0, burn = 0, feeMint = 0, ok = 0, tried = 0;
+  const CH = 9500, chunks = [];
+  for (let hi = blk; hi > blk - 50400; hi -= CH) chunks.push([Math.max(hi - CH + 1, blk - 50400), hi]);
+  for (let i = 0; i < chunks.length; i++) {
+    const [lo, hi] = chunks[i]; tried++;
+    const rot = [LOG_RPCS[i % LOG_RPCS.length], LOG_RPCS[(i + 1) % LOG_RPCS.length]];
+    const logs = await rpcOn(rot, "eth_getLogs", [{ address: token, fromBlock: "0x" + lo.toString(16), toBlock: "0x" + hi.toString(16), topics: [XFER] }]);
+    if (logs) { ok++;
+      for (const l of logs) { const v = parseInt(l.data, 16) / 1e18;
+        if (l.topics[1] === ZERO32) { if (("0x" + l.topics[2].slice(26)).toLowerCase() === FEE_RECIPIENT) feeMint += v; else mint += v; }
+        else if (l.topics[2] === ZERO32) burn += v; }
+    }
+    await sleep(160);
+  }
+  return { mint, burn, feeMint, coverage: ok / tried };
+}
+function statCard(items) {
+  return items.map(x => `<div class="s"><div class="k">${x.k}</div><div class="v ${x.cls || ""}">${x.v}</div><div class="d">${x.d}</div></div>`).join("");
+}
+async function loadVaultStats(cfgs) {
+  // Phase 1 — cheap reads that never fail: TVL, share price, pending queue, idle, freshness. Render immediately.
+  const px = c => (c.tvl && c.shares ? c.tvl / c.shares : 0);
+  for (const c of cfgs) {
+    try {
+      const bal = await rpcOn(HEAD_RPCS, "eth_call", [{ to: c.token, data: "0x70a08231" + "0".repeat(24) + c.token.slice(2) }, "latest"]);
+      c.pendShares = bal ? parseInt(bal, 16) / 1e18 : null;
+    } catch (e) { c.pendShares = null; }
+    const p = px(c), pendUsd = c.pendShares != null ? c.pendShares * p : null;
+    c._base = [
+      { k: "TVL", v: fmt$(c.tvl), d: c.apy != null ? c.apy.toFixed(2) + "% APY 14d" : "" },
+      { k: "share price", v: "$" + p.toFixed(2), d: c.lp7 != null ? (c.lp7 >= 0 ? "+" : "") + c.lp7.toFixed(3) + "% 7d" : "" },
+      { k: "withdraw queue", v: pendUsd != null ? fmt$(pendUsd) : "—", d: pendUsd != null ? (c.tvl ? (pendUsd / c.tvl * 100).toFixed(2) : "?") + "% of TVL · " + c.pendShares.toFixed(0) + " shares" : "burn-at-request" },
+      { k: "idle buffer", v: c.idle != null ? c.idle.toFixed(1) + "%" : "—", d: "vs " + c.redeemInt + " redeem interval" },
+      { k: "last oracle report", v: c.reportAge != null ? c.reportAge.toFixed(1) + "h ago" : "—", d: "20h min cadence · fees accrue at report" },
+    ];
+    c._flowPlaceholder = [
+      { k: "deposits settled 7d", v: "…", d: "reading logs" },
+      { k: "withdrawals settled 7d", v: "…", d: "reading logs" },
+      { k: "net flow 7d", v: "…", d: "" },
+    ];
+    $(c.el).innerHTML = statCard([...c._base, ...c._flowPlaceholder]);
+  }
+  setStatus("On-chain flows", "wait", "queue+price ok");
+  // Phase 2 — heavier 7d flow scan, sequential across vaults to spread RPC load.
+  let anyFlow = false;
+  for (const c of cfgs) {
+    try {
+      const blk = parseInt(await rpcOn(HEAD_RPCS, "eth_blockNumber", []), 16);
+      const f = await tokenFlows7d(c.token, blk);
+      const p = px(c), dep = f.mint * p, wdr = f.burn * p, net = dep - wdr;
+      const cov = f.coverage < 0.99 ? ` · ${Math.round(f.coverage * 100)}% of window` : "";
+      const flow = [
+        { k: "deposits settled 7d", v: fmt$(dep), d: f.mint.toFixed(0) + " shares minted (net of fees)" + cov },
+        { k: "withdrawals settled 7d", v: fmt$(wdr), d: f.burn.toFixed(0) + " shares burned" + cov },
+        { k: "net flow 7d", v: (net >= 0 ? "+" : "−") + fmt$(Math.abs(net)), cls: net >= 0 ? "pos" : "neg", d: "settled at oracle reports" + cov },
+      ];
+      $(c.el).innerHTML = statCard([...c._base, ...flow]);
+      if (f.coverage > 0) anyFlow = true;
+    } catch (e) {
+      $(c.el).innerHTML = statCard([...c._base,
+        { k: "7d flows", v: "—", d: "free-RPC log limit hit; queue & price above are live" }]);
+    }
+  }
+  setStatus("On-chain flows", anyFlow ? "ok" : "err", anyFlow ? "drpc/blastapi" : "queue only");
+}
 // ---------- exposure lenses: same book, three cuts ----------
 const LENS_COLORS = {
   chain: { ethereum: "#3987e5", plasma: "#e66767", mantle: "#d95926", base: "#199e70", other: "#3a4656" },
@@ -993,6 +1085,22 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     if (ethRowsA) renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
     if (usdRowsA) renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
   };
+
+  // vault stats: fire-and-forget on-chain flow reads (drpc chunked, 1rpc/publicnode fallback)
+  const lp7 = raw => { if (!raw || raw.length < 8) return null;
+    const lp = i => parseFloat(raw[i].lp_price && raw[i].lp_price.value);
+    const a = lp(raw.length - 8), b2 = lp(raw.length - 1);
+    return a > 0 && b2 > 0 ? (b2 / a - 1) * 100 : null; };
+  const sharesOf = raw => { if (!raw || !raw.length) return null;
+    const t = raw[raw.length - 1].total_shares; return t ? +t.amount / 10 ** (+t.decimals || 18) : null; };
+  const idleOf = rows => { if (!rows) return null; const r = (rows.full || rows).find(x => x.cat === "idle"); return r ? r.pct : 0; };
+  const ageOf = m => m && m.d && m.d.apyLastUpdate ? (Date.now() / 1e3 - +m.d.apyLastUpdate) / 3600 : null;
+  loadVaultStats([
+    { el: "vstatsEth", token: "0xBBFC8683C8fE8cF73777feDE7ab9574935fea0A4", tvl: ethTvl, apy: ethApy,
+      shares: sharesOf(hEth), lp7: lp7(hEth), idle: idleOf(ethRowsA), reportAge: ageOf(mEth), redeemInt: "24h" },
+    { el: "vstatsUsd", token: "0x4Ce1ac8F43E0E5BD7A346A98aF777bF8fbeA1981", tvl: usdTvl, apy: usdApy,
+      shares: sharesOf(hUsd), lp7: lp7(hUsd), idle: idleOf(usdRowsA), reportAge: ageOf(mUsd), redeemInt: "48h" },
+  ]);
 
   // peer look-through
   const chips = (r, label) => {
