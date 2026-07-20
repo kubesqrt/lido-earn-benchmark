@@ -804,8 +804,8 @@ function yieldCell(y, pct) {
 }
 // ---------- vault stats: on-chain flows + queue + freshness ----------
 // getLogs-capable + CORS-open free RPCs (both ~10k-block range); rotated to dodge rate limits
-const LOG_RPCS = ["https://eth.drpc.org", "https://eth-mainnet.public.blastapi.io"];
-const HEAD_RPCS = ["https://eth.drpc.org", "https://1rpc.io/eth", "https://ethereum-rpc.publicnode.com"];
+const LOG_RPCS = ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org", "https://eth-mainnet.public.blastapi.io"];
+const HEAD_RPCS = ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org", "https://1rpc.io/eth", "https://ethereum-rpc.publicnode.com"];
 async function rpcOn(urls, method, params) {
   for (const u of urls) {
     try { const r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" },
@@ -825,8 +825,9 @@ async function tokenFlows7d(token, blk) {
   for (let hi = blk; hi > blk - 50400; hi -= CH) chunks.push([Math.max(hi - CH + 1, blk - 50400), hi]);
   for (let i = 0; i < chunks.length; i++) {
     const [lo, hi] = chunks[i]; tried++;
-    const rot = [LOG_RPCS[i % LOG_RPCS.length], LOG_RPCS[(i + 1) % LOG_RPCS.length]];
-    const logs = await rpcOn(rot, "eth_getLogs", [{ address: token, fromBlock: "0x" + lo.toString(16), toBlock: "0x" + hi.toString(16), topics: [XFER] }]);
+    const rot = [LOG_RPCS[i % LOG_RPCS.length], LOG_RPCS[(i + 1) % LOG_RPCS.length], LOG_RPCS[(i + 2) % LOG_RPCS.length]];
+    let logs = await rpcOn(rot, "eth_getLogs", [{ address: token, fromBlock: "0x" + lo.toString(16), toBlock: "0x" + hi.toString(16), topics: [XFER] }]);
+    if (!logs) { await sleep(300); logs = await rpcOn(LOG_RPCS, "eth_getLogs", [{ address: token, fromBlock: "0x" + lo.toString(16), toBlock: "0x" + hi.toString(16), topics: [XFER] }]); }
     if (logs) { ok++;
       for (const l of logs) { const v = parseInt(l.data, 16) / 1e18;
         if (l.topics[1] === ZERO32) { if (("0x" + l.topics[2].slice(26)).toLowerCase() === FEE_RECIPIENT) feeMint += v; else mint += v; }
