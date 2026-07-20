@@ -179,7 +179,8 @@
 
   <h2><span class="idx">04</span>Lending-market cheat sheet — every parameter the book runs on</h2>
   <div class="card">
-    <p class="note" style="margin-top:0"><b>Collateral parameters</b> (LTV = max borrow at entry · LT = liquidation threshold · penalty = liquidator bonus). All read on-chain 2026-07-17/18.</p>
+    <p class="note" style="margin-top:0;font-size:12.5px"><b>How to read this — the whole mechanism in one paragraph.</b> <b>LTV</b> is the entry cap: LTV 80 means $100 of collateral can borrow $80, and it's only checked when you act. <b>LT (liquidation threshold)</b> is the higher bar where the position becomes seizable; the LTV→LT gap is your safety margin, and drawdown-to-liquidation = 1 − LTV/LT. Live safety is the <b>Health Factor = Σ(collateral × LT) ÷ debt</b> — below 1, any keeper bot may repay part of your debt and take collateral worth more than it repaid; that excess is the <b>penalty</b> column (1% in e-modes, 4–7% outside). <b>E-mode</b> grants correlated pairs (wstETH/ETH) much higher limits because their relative price barely moves — and since <b>max leverage = 1/(1−LTV)</b>, e-mode is what makes loops possible at all (LTV 93 → 14.3×). A loop is <i>short the borrow rate</i>: on exchange-rate oracles (which ignore depegs by design) same-asset loops die by the rate tail or a market freeze — almost never by price.</p>
+    <p class="note" style="margin-top:12px"><b>Collateral parameters</b> (LTV = max borrow at entry · LT = liquidation threshold · penalty = liquidator bonus). All read on-chain 2026-07-17/18.</p>
     <table>
       <tr><th>Market · mode</th><th class="num">Max LTV</th><th class="num">Liq. threshold</th><th class="num">Penalty</th><th>Used by</th></tr>
       <tr><td>Aave Core · E-mode "ETH-correlated" (wstETH/WETH)</td><td class="num">93%</td><td class="num">95%</td><td class="num">1%</td><td>E1</td></tr>
@@ -209,6 +210,16 @@
       <tr><td>vs LT 95 (E-mode loops)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">−15.8%*</td><td class="num">−10.2%*</td></tr>
     </table>
     <p class="note" style="font-size:11.5px">*For E-mode loops the "price" is the wstETH/ETH exchange-rate ratio, not ETH/USD — it only moves on slashing or rate drift, which is why loop liquidations are remote and RATE risk (the IRM table) is the real killer. Fee on liquidation = the penalty column, paid out of your collateral.</p>
+    <p class="note" style="margin-top:14px"><b>Fees — who takes what.</b> Earn vaults: <b>1% management + 10% performance over a high-watermark</b>, accrued at each oracle report and paid by <b>minting shares to the treasury</b> — dilution, not cash, so TVL is untouched and holders' share % shrinks. No deposit or exit fee; the withdrawal cost is time (~72h). Aave keeps a <b>reserve factor</b> (~10–15% of interest — why supply APY &lt; borrow APY), and the liquidation penalty above is the fee you pay for being liquidated.</p>
+    <p class="note" style="margin-top:14px"><b>Reasonable leverage</b> — pick L by three tests and the lowest answer wins: (1) buffer ≥ 1.5× the pair's worst historical basis move · (2) survive 30 days at slope2 for &lt;25bp of NAV · (3) the unwind fits the redemption SLA at real depth:</p>
+    <table>
+      <tr><th>Collateral class</th><th>Sensible</th><th>Aggressive</th><th>Avoid</th><th>Binding constraint</th></tr>
+      <tr><td>ETH LST loop (wstETH/ETH e-mode)</td><td class="num">3–5×</td><td class="num">6–8×</td><td class="num">&gt;8×</td><td>rate tail, then basis (worst-ever −6.6%)</td></tr>
+      <tr><td>Stable / PT loops (market-priced oracle)</td><td class="num">2–3×</td><td class="num">4–5× + carry kill-switch</td><td class="num">&gt;5×; linear-discount at size</td><td>implied-rate spikes · exit depth</td></tr>
+      <tr><td>LRT loops (rsETH, weETH…)</td><td class="num">0</td><td class="num">1–2× w/ live redemption</td><td class="num">frozen/thin markets</td><td>redemption path / freeze</td></tr>
+      <tr><td>Cross-asset carry (wstETH → USD)</td><td class="num">LTV ≤ 45</td><td class="num">LTV 50–55</td><td class="num">LTV &gt; 60</td><td>ETH/USD gap — real price risk</td></tr>
+    </table>
+    <p class="note" style="font-size:11.5px">The book vs these bands: E1 6.82× = aggressive · E4 8.94× = over the line on the worst rate tail · E5 12.17× = triple fail · E2 1.56× = the one conservatively-sized position. Past ~5× you're adding mostly tail, not yield.</p>
   </div>
 
   <footer>Companion to the <a href="index.html" style="color:var(--accent);text-decoration:none">benchmark board</a> and <a href="architecture.html" style="color:var(--accent);text-decoration:none">architecture map</a> · measured leverage from on-chain balances (overnight/actual-leverage.md) · params verified on-chain · not investment advice.</footer>
