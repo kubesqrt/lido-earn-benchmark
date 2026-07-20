@@ -143,7 +143,7 @@
   </p>
 
   <footer>
-    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">rates board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>.
+    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">rates board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>. <span style="opacity:.5">build v3</span>
   </footer>
 </div>
 <div class="tt" id="tt"></div>
@@ -164,11 +164,16 @@ const CHUNK = 9900, BIG_PCT = 0.01;                      // settlement >=1% of T
 let WIN = 30, DEN = "usd";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+function withTimeout(ms) {
+  try { return AbortSignal.timeout(ms); } catch (e) {
+    const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal;
+  }
+}
 async function rpcOn(urls, method, params) {
   for (const u of urls) {
     try {
       const r = await fetch(u, { method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params }) });
+        body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params }), signal: withTimeout(10000) });
       const j = await r.json();
       if (j && j.result !== undefined && j.result !== null) return j.result;
     } catch (e) {}
@@ -213,6 +218,7 @@ async function scanVault(cfg, headBlk, secPerBlk, days, price, tvl) {
   for (let hi = headBlk; hi > fromBlk; hi -= CHUNK) chunks.push([Math.max(hi - CHUNK + 1, fromBlk), hi]);
   for (let i = 0; i < chunks.length; i++) {
     const [lo, hi] = chunks[i]; totChunks++;
+    setStatus("Flows", "wait", `${cfg.name} ${i + 1}/${chunks.length}`);
     const req = [{ address: cfg.token, fromBlock: "0x"+lo.toString(16), toBlock: "0x"+hi.toString(16), topics: [XFER] }];
     const rot = [LOG_RPCS[i % 3], LOG_RPCS[(i+1) % 3], LOG_RPCS[(i+2) % 3]];
     let logs = await rpcOn(rot, "eth_getLogs", req);
@@ -375,7 +381,7 @@ async function priceAndTvl(cfg) {
   const shares = supHex ? parseInt(supHex, 16) / 1e18 : null;
   let tvl = null;
   try {
-    const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`)).json();
+    const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`, { signal: withTimeout(10000) })).json();
     tvl = d.allocations.reduce((s, a) => s + (+a.tvl.usd) / Math.pow(10, a.tvl.usd_decimals), 0);
   } catch (e) {}
   const price = (shares && tvl) ? tvl / shares : (cfg.native === "ETH" ? 2044 : 1.40);
