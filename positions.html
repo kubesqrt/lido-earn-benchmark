@@ -108,7 +108,7 @@
       <div class="step act"><div class="t">Borrow WETH 1.94%</div><div class="d">cheapest ETH borrow — that's the draw</div><div class="m">D ≈ $157M</div></div>
       <div class="step rsk"><div class="t">The catch: the rate curve</div><div class="d">kink 90% · slope2 75% ⇒ 40% borrow at 95% util, 77% at 100%</div><div class="m">zero-carry sits AT the kink</div></div>
     </div>
-    <div class="liq">highest leverage in the ETH book on the venue with the fattest tail. At 8.94× and 95% util: ≈ −147% APR while it lasts. Buffer to kink ≈ $63M of flows.</div>
+    <div class="liq">highest leverage in the ETH book on the venue with the fattest tail. At 8.94× and 95% util: ≈ −295% APR while it lasts (−147% already at 5×). Util 89.7% on Jul-20 — 0.3pp below the kink.</div>
     <div class="riskline"><span>EarnETH's debt ≈ 49% of Spark's free WETH — its own exit moves the rate</span><span>Sky governance can pull protocol-owned liquidity</span></div>
   </div>
 
@@ -153,7 +153,7 @@
       <div class="step act"><div class="t">Borrow USDT0 ~3.95%</div><div class="d">at 90.8% utilization — ON the kink; printed ~7% on Jul 14</div><div class="m">D ≈ $86M ≈ most of the chain's free USDT0</div></div>
       <div class="step rsk"><div class="t">Exit runs through 3 doors</div><div class="d">sell/unwind syrup → USDT0 → bridge off Plasma (chain TVL −89% from peak)</div><div class="m">days calm · weeks stressed · vs a 48h SLA</div></div>
     </div>
-    <div class="liq">carry is <b>−0.88pp/turn TODAY</b> (net −0.73%) — USDT0 borrow spiked past syrupUSDT's 4.15% yield. Best case even at the 92% kink is only +0.06pp/turn (net ~+4.5% ≈ unlevered syrup + 35bp). A 0.5–0.6% NAV markdown trips the DAO's 1% trigger alone. Oracle = Chainlink NAV feed — no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset). Verified on-chain 2026-07-18.</div>
+    <div class="liq">carry hit <b>−0.88pp/turn at the Jul-14 spike</b> (net −0.73%, borrow ≈5.0%; the header's net 4.30% is the calmer Jul-18 measured read) — USDT0 borrow spiked past syrupUSDT's 4.15% yield. Best case even at the 92% kink is only +0.06pp/turn (net ~+4.5% ≈ unlevered syrup + 35bp). A 0.5–0.6% NAV markdown trips the DAO's 1% trigger alone. Oracle = Chainlink NAV feed — no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset). Verified on-chain 2026-07-18.</div>
     <div class="riskline"><span>position IS its own exit market</span><span>USDT0 = LayerZero OFT, 2-of-2 DVN (Kelp failure category)</span><span>net 4.30% ≈ unlevered mainnet syrup + ~15bp — the stack earns almost nothing</span></div>
   </div>
 
@@ -162,7 +162,7 @@
     <div class="flow">
       <div class="step src"><div class="t">Collateral: USDe + sUSDe MIX</div><div class="d">on-chain it's ~36–51% RAW USDe (earns 0) + sUSDe — NOT the pure sUSDe the disclosures imply</div><div class="m">blended collateral yield dragged low</div></div>
       <div class="step act"><div class="t">Borrow STABLECOINS</div><div class="d">USDT / USDC / USDT0 at 3.5–5.0% — verified vUSDe debt = 0, so they do NOT borrow USDe</div><div class="m">the disclosure ("borrow USDe") ≠ the on-chain reality</div></div>
-      <div class="step rsk"><div class="t">Net carry is NEGATIVE</div><div class="d">low collateral yield − expensive stable debt, levered</div><div class="m">mainnet −3.08% · Plasma −7.6% (spiked rate) · verified on-chain</div></div>
+      <div class="step rsk"><div class="t">Net carry is NEGATIVE</div><div class="d">low collateral yield − expensive stable debt, levered</div><div class="m">Jul-18 measured set: −2.99 / +4.34 / −3.15 · at spiked rates: mainnet −3.08% · Plasma −7.6% · verified on-chain</div></div>
       <div class="step rsk"><div class="t">Only rewards rescue it</div><div class="d">XPL (Plasma) / MNT (Mantle) subsidies — Mantle program ends ~Aug 11, exit door $0.11M</div><div class="m">7d sUSDe cooldown vs 48h SLA</div></div>
     </div>
     <div class="riskline"><span>Mantle at 9× is a subsidy trade with a dated expiry</span><span>disclosure says "sUSDe collateral, borrow USDe" — on-chain it's raw-USDe collateral + stablecoin debt, a genuine strategy-vs-reality gap</span><span>only ~39% of USDe supply is staked; the basis trade is functionally dead</span></div>
@@ -184,7 +184,7 @@
     <table>
       <tr><th>Market · mode</th><th class="num">Max LTV</th><th class="num">Liq. threshold</th><th class="num">Penalty</th><th>Used by</th></tr>
       <tr><td>Aave Core · E-mode "ETH-correlated" (wstETH/WETH)</td><td class="num">93%</td><td class="num">95%</td><td class="num">1%</td><td>E1</td></tr>
-      <tr><td>Aave Core · E-mode rsETH/wstETH/ETHx</td><td class="num">93%</td><td class="num">95%</td><td class="num">1%</td><td>E5</td></tr>
+      <tr><td>Aave Core · E-mode rsETH/wstETH/ETHx</td><td class="num">93%</td><td class="num">95%</td><td class="num">1%</td><td>E5 (FROZEN — reserve LTV 0)</td></tr>
       <tr><td>Aave Prime · wstETH/WETH E-mode</td><td class="num">95%</td><td class="num">96.5%</td><td class="num">1%</td><td>(alt venue)</td></tr>
       <tr><td>Spark · E-mode cat.1 (wstETH/WETH)</td><td class="num">92%</td><td class="num">93%</td><td class="num">1%</td><td>E4</td></tr>
       <tr><td>Aave Core · wstETH OUTSIDE E-mode (USD borrow)</td><td class="num">78.5%</td><td class="num">81%</td><td class="num">6%</td><td>E2</td></tr>
@@ -194,14 +194,14 @@
     </table>
     <p class="note" style="margin-top:14px"><b>Interest-rate curves</b> — the borrow-rate tail is where levered positions die. Rate = slope1 up to the kink, then slope1 + slope2 pro-rata to 100%.</p>
     <table>
-      <tr><th>Market</th><th class="num">Util now</th><th class="num">Kink</th><th class="num">Slope1</th><th class="num">Slope2</th><th class="num">Max rate @100%</th><th>Read</th></tr>
-      <tr><td>Aave Core WETH</td><td class="num">78.6%</td><td class="num">92%</td><td class="num">2.35%</td><td class="num">6%</td><td class="num">8.35%</td><td>tail CAPPED — right venue for big loops</td></tr>
+      <tr><th>Market</th><th class="num">Util (Jul-20)</th><th class="num">Kink</th><th class="num">Slope1</th><th class="num">Slope2</th><th class="num">Max rate @100%</th><th>Read</th></tr>
+      <tr><td>Aave Core WETH</td><td class="num">76.1%</td><td class="num">92%</td><td class="num">2.35%</td><td class="num">6%</td><td class="num">8.35%</td><td>tail CAPPED — right venue for big loops</td></tr>
       <tr><td>Aave Prime WETH</td><td class="num">84.1%</td><td class="num">92%</td><td class="num">2.14%</td><td class="num">8%</td><td class="num">10.14%</td><td>thinner pool, better E-mode</td></tr>
-      <tr><td>Spark WETH</td><td class="num">83.3%</td><td class="num">90%</td><td class="num">2.10%</td><td class="num hot">75%</td><td class="num hot">77.1%</td><td>legacy curve — the fat tail under E4</td></tr>
-      <tr><td>Aave Core USDC</td><td class="num">90.3%</td><td class="num">92%</td><td class="num">—</td><td class="num">10%</td><td class="num">~14%</td><td>1.7pp from slope2</td></tr>
-      <tr><td>Spark USDT</td><td class="num hot">96.0%</td><td class="num">95%</td><td class="num">—</td><td class="num">15%</td><td class="num">~19%</td><td>ALREADY past kink (7.0% borrow)</td></tr>
-      <tr><td>Aave-Plasma USDT0</td><td class="num hot">90.8%</td><td class="num">~90%</td><td class="num">—</td><td class="num">—</td><td class="num">~7%+ observed</td><td>ON the kink; Jul-14 spike proved it</td></tr>
-      <tr><td>crvUSD (mint vs wstETH)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">2.17% now</td><td>cheapest USD vs wstETH anywhere (rate floats)</td></tr>
+      <tr><td>Spark WETH</td><td class="num hot">89.7%</td><td class="num">90%</td><td class="num">2.10%</td><td class="num hot">75%</td><td class="num hot">77.1%</td><td>legacy curve — 0.3pp below the kink (Jul-20); the fat tail under E4</td></tr>
+      <tr><td>Aave Core USDC</td><td class="num">90.1%</td><td class="num">92%</td><td class="num">—</td><td class="num">10%</td><td class="num">~14%</td><td>1.7pp from slope2</td></tr>
+      <tr><td>Spark USDT</td><td class="num hot">96.0% (Jul-18)</td><td class="num">95%</td><td class="num">—</td><td class="num">15%</td><td class="num">~19%</td><td>ALREADY past kink (7.0% borrow)</td></tr>
+      <tr><td>Aave-Plasma USDT0</td><td class="num hot">92.1%</td><td class="num">~90%</td><td class="num">—</td><td class="num">—</td><td class="num">~7%+ observed</td><td>ON the kink; Jul-14 spike proved it</td></tr>
+      <tr><td>crvUSD (mint vs wstETH)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">2.17% (Jul-18)</td><td>cheapest USD vs wstETH anywhere (rate floats)</td></tr>
     </table>
     <p class="note" style="margin-top:14px"><b>Liquidation distance ready-reckoner</b> — drawdown = 1 − LTV/LT:</p>
     <table>

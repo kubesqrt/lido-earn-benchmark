@@ -262,7 +262,8 @@ async function scanVault(cfg, headBlk, secPerBlk, days, price, tvl) {
 function barChart(series, price, unit) {
   const W = 960, H = 250, mL = 8, mR = 8, mT = 18, mB = 24;
   const plotW = W - mL - mR, plotH = H - mT - mB, n = series.length;
-  const toV = s => DEN === "usd" ? s * price : s;
+  const useUsd = DEN === "usd" && price > 0;
+  const toV = s => useUsd ? s * price : s;
   const ins = series.map(d => toV(d.dep));
   const outs = series.map(d => toV(d.routine) + toV(d.big));
   const maxAbs = Math.max(1e-9, ...ins, ...outs);
@@ -294,7 +295,10 @@ function barChart(series, price, unit) {
 
 function renderVault(key, cfg, data, price, tvl) {
   const unit = cfg.native, days = data.series.length;
-  const toV = s => DEN === "usd" ? s * price : s;
+  const usdOK = !!(price && tvl);
+  const useUsd = usdOK && DEN === "usd";
+  const toV = s => useUsd ? s * price : s;
+  const money = (v, u) => useUsd ? fmtUsd(v) : fmtNative(v, u);
   const ins = data.series.map(d => toV(d.dep));
   const routs = data.series.map(d => toV(d.routine));
   const bigs = data.series.map(d => toV(d.big));
@@ -311,8 +315,8 @@ function renderVault(key, cfg, data, price, tvl) {
     `<div class="tile usual"><div class="k">Median deposit day</div><div class="v inn">${money(si.activeMedian, unit)}</div><div class="d">${si.active}/${days} days with deposits</div></div>` +
     `<div class="tile net"><div class="k">Net flow · ${WIN}d</div><div class="v ${sn.total>=0?'pos':'neg'}">${sn.total>=0?'+':'−'}${money(Math.abs(sn.total), unit)}</div><div class="d">in ${money(si.total, unit)} · out ${money(so.total, unit)}</div></div>` +
     (biggest
-      ? `<div class="tile block"><div class="k">Largest settlement</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d">${pctTvl(biggest.shares).toFixed(1)}% of TVL · ${data.series[biggest.day]?data.series[biggest.day].full:""}</div></div>`
-      : `<div class="tile block"><div class="k">Settlements ≥1% TVL</div><div class="v">0</div><div class="d">none in window</div></div>`) +
+      ? `<div class="tile block"><div class="k">Largest settlement</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d">${pctTvl(biggest.shares).toFixed(1)}% of TVL · ${(data.series[data.series.length - 1 - biggest.day] || {}).full || ""}</div></div>`
+      : `<div class="tile block"><div class="k">Settlements ≥1% TVL</div><div class="v">${usdOK ? "0" : "—"}</div><div class="d">${usdOK ? "none in window" : "needs the TVL feed"}</div></div>`) +
     `</div>`;
 
   // concentration: top requesters / depositors
@@ -328,10 +332,12 @@ function renderVault(key, cfg, data, price, tvl) {
     `<div><table><thead><tr><th>Depositor</th><th class="num">Deposited</th><th class="num">Share</th></tr></thead><tbody>${mkRows(data.depBy, depTotal)}</tbody></table></div></div>`;
 
   // one-line buffer read
-  const buf5 = 0.05 * tvl;
-  const note = biggest
-    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(DEN==="usd"?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement — <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL)</b> — which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
-    : `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(DEN==="usd"?1:price)))+"×":"—"}</b> over. No settlement exceeded 1% of TVL in this window.</p>`;
+  const buf5 = 0.05 * (tvl || 0);
+  const note = !usdOK
+    ? `<p class="flownote">Mellow API unreachable — USD valuation and TVL-relative analysis disabled; flows shown in ${unit} share units.</p>`
+    : biggest
+    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement — <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL)</b> — which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
+    : `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. No settlement exceeded 1% of TVL in this window.</p>`;
 
   const rows = data.series.map((d, i) => {
     const rout = toV(d.routine), bg = toV(d.big), inn = toV(d.dep), net = inn - rout - bg;
@@ -342,9 +348,9 @@ function renderVault(key, cfg, data, price, tvl) {
   }).reverse().join("");
 
   return `<div class="card" data-key="${key}">
-      <div class="cardhead">${cfg.name}<small>settled flows, ${WIN}d${cov}</small><span class="tvl">TVL ${fmtUsd(tvl)} · $${price.toFixed(price<10?2:0)}/share</span></div>
+      <div class="cardhead">${cfg.name}<small>settled flows, ${WIN}d${cov}</small><span class="tvl">${usdOK ? `TVL ${fmtUsd(tvl)} · $${price.toFixed(price<10?2:0)}/share` : `<span style="color:var(--warn)">Mellow API unavailable — native units, no TVL classification</span>`}</span></div>
       ${tiles}
-      <div class="legend"><span><i style="background:var(--in)"></i>deposits</span><span><i style="background:var(--out)"></i>settlements &lt;1% TVL</span><span><i style="background:var(--block)"></i>settlements ≥1% TVL</span></div>
+      <div class="legend"><span><i style="background:var(--in)"></i>deposits</span>${usdOK ? `<span><i style="background:var(--out)"></i>settlements &lt;1% TVL</span><span><i style="background:var(--block)"></i>settlements ≥1% TVL</span>` : `<span><i style="background:var(--out)"></i>settlements</span>`}</div>
       <div class="scroll" id="chart-${key}">${barChart(data.series, price, unit)}</div>
       ${conc}
       ${data.focusNote || ""}
@@ -355,7 +361,9 @@ function renderVault(key, cfg, data, price, tvl) {
 
 function wireChart(key, cfg, series, price) {
   const el = $("chart-" + key); if (!el) return;
-  const unit = cfg.native, toV = s => DEN === "usd" ? s * price : s;
+  const useUsd = DEN === "usd" && price > 0;
+  const unit = cfg.native, toV = s => useUsd ? s * price : s;
+  const money = (v, u) => useUsd ? fmtUsd(v) : fmtNative(v, u);
   el.querySelectorAll(".hit").forEach(h => {
     h.addEventListener("mousemove", e => {
       const d = series[+h.dataset.i]; const net = toV(d.dep) - toV(d.routine) - toV(d.big);
@@ -384,8 +392,7 @@ async function priceAndTvl(cfg) {
     const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`, { signal: withTimeout(10000) })).json();
     tvl = d.allocations.reduce((s, a) => s + (+a.tvl.usd) / Math.pow(10, a.tvl.usd_decimals), 0);
   } catch (e) {}
-  const price = (shares && tvl) ? tvl / shares : (cfg.native === "ETH" ? 2044 : 1.40);
-  return { price, tvl: tvl || 0 };
+  return { price: (shares && tvl) ? tvl / shares : null, tvl: tvl || null };
 }
 function dayMeta(headTs, dayAgo) {
   const d = new Date((headTs - dayAgo * 86400) * 1000);
@@ -405,7 +412,7 @@ async function buildFocusNote(data, price, tvl, unit) {
   data.kinds = data.kinds || {}; data.kinds[topA] = kind;
   const depV = data.depBy[topA] || 0;
   return `<div class="focus"><b>Concentration:</b> one ${kind === "EOA" ? "wallet (EOA)" : "contract"} <code>${shortA(topA)}</code> accounts for <b>${Math.round(shareOf*100)}%</b> of redemption requests this window` +
-    (depV > 0 ? ` and <b>${fmtUsd(depV*price)}</b> of deposits` : "") +
+    (depV > 0 && price ? ` and <b>${fmtUsd(depV*price)}</b> of deposits` : "") +
     `. Outflow risk here is a single counterparty, not a distribution — the case for knowing the holder and putting notice terms on large tickets.</div>`;
 }
 

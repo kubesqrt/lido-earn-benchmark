@@ -85,7 +85,7 @@
       <div class="down">⇅</div>
       <div class="box"><div class="t">earnETH / earnUSD</div><div class="d">ERC-20 share tokens; price = attested NAV. Balance never changes — price does.</div></div>
       <div class="down">⇅</div>
-      <div class="box"><div class="t">Queues</div><div class="d">Per-asset DepositQueue (~24h) &amp; RedeemQueue (~72h, burn-at-request). Instant path: Signature queues (EIP-712 Consensus signers).</div></div>
+      <div class="box"><div class="t">Queues</div><div class="d">Per-asset DepositQueue (~24h) &amp; RedeemQueue (~72h, escrowed at request). Instant path: Signature queues (EIP-712 Consensus signers).</div></div>
     </div>
     <div class="lane">
       <div class="lanelbl">Meta-vault (Mellow Core Vault)</div>
@@ -145,7 +145,7 @@
   <h2><span class="idx">04</span>Redemption lifecycle — why 72h, and what must go right</h2>
   <div class="card">
     <div class="flow">
-      <div class="step actor"><div class="t">User requests</div><div class="d">shares <b>burned immediately</b>; request logged in Fenwick-tree batch structure</div><div class="m">non-cancellable · anti yield-griefing</div></div>
+      <div class="step actor"><div class="t">User requests</div><div class="d">shares <b>move to the queue at request</b> (burned at batch settlement &mdash; on-chain burns are settlement-day events); request logged in Fenwick-tree batch structure</div><div class="m">non-cancellable · anti yield-griefing</div></div>
       <div class="step check"><div class="t">Batch prices</div><div class="d">next report older than <b>redeemInterval</b> fixes the batch's price</div></div>
       <div class="step danger"><div class="t">Curator sources liquidity</div><div class="d">pulls from subvaults, unwinds positions if the idle buffer is short</div><div class="m">the liveness dependency</div></div>
       <div class="step money"><div class="t">handleBatches → claim</div><div class="d">assets move to queue; user claims wstETH (ETH vault) / USDC (USD vault)</div><div class="m">up to ~72h</div></div>
@@ -168,7 +168,7 @@
       <tr><th>Role</th><th>Threshold</th><th>Address</th><th>Powers</th><th>Conditions / limits</th></tr>
       <tr><td>Proxy Admin</td><td class="thr">5/8</td><td class="mono">0x81698f87…0Af0</td><td class="pw"><b>Upgrade implementations</b> — the nuclear power</td><td class="cond">Behind timelock; slow by design</td></tr>
       <tr><td>Lazy Vault Admin</td><td class="thr">5/8</td><td class="mono">0x0Dd73341…076E</td><td class="pw">Non-urgent config: queues, limits, role grants, verifier entries</td><td class="cond">Timelocked; high quorum</td></tr>
-      <tr><td>Active Vault Admin</td><td class="thr">3/8</td><td class="mono">0x982aB697…еf10</td><td class="pw">Time-sensitive ops</td><td class="cond">Lower quorum for speed; narrower scope</td></tr>
+      <tr><td>Active Vault Admin</td><td class="thr">3/8</td><td class="mono">0x982aB697…ef10</td><td class="pw">Time-sensitive ops</td><td class="cond">Lower quorum for speed; narrower scope</td></tr>
       <tr><td>Curator (meta-vaults)</td><td class="thr">3/5</td><td class="mono">0xe5abcc40…769d</td><td class="pw">Rebalance calls; fulfil redemption batches</td><td class="cond">Only verifier-allowlisted calls, inside RiskManager caps</td></tr>
       <tr><td>Curator (USD subvaults)</td><td class="thr">3/7</td><td class="mono">0x9745F161…6899</td><td class="pw">Same, for earnUSDc/earnUSDe</td><td class="cond">Same gates</td></tr>
       <tr><td>Oracle updater</td><td class="thr">3/8</td><td class="mono">0x93a79764…35D1</td><td class="pw">submitReports (share price)</td><td class="cond">On-chain (2026-07-18): max ±0.5% move per report; &gt;0.1% auto-flagged suspicious; timeout 20h; depositInterval 1h; redeemInterval 24h (ETH) / 48h (USD)</td></tr>

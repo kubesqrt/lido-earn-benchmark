@@ -165,14 +165,14 @@
   <div class="card"><div class="scroll" id="ethBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="ethTable"></div></div>
 
   <h2><span class="idx">02</span>USD-denominated vaults</h2>
-  <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything above ~5.5% embeds leverage, credit or young-chain risk somewhere. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
+  <p class="note">Baselines: <b>sUSDS (Sky Savings Rate)</b> on-chain; SOFR ~3.6% / 3-month T-bill ~3.8% off-chain (static reference, mid-2026). Everything much above sUSDS + ~2pp embeds leverage, credit or young-chain risk somewhere. <b>Click any row (or its bar)</b> to unfold that vault's live book.</p>
   <div class="card"><div class="scroll" id="usdBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="usdTable"></div></div>
 
   <h2><span class="idx">03</span>RWA &amp; tokenized-credit yields <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">candidate assets for an EarnRWA vault</span></h2>
-  <p class="note">Live rates for the RWA universe a Lido RWA sleeve would draw from, grouped by risk tier. The columns that matter for curation aren't the APY &mdash; they're <b>backing</b>, <b>redemption terms</b> (vs a 48h vault SLA), and <b>oracle type</b> (attested-NAV assets are the xUSD failure pattern in a suit). <span style="color:var(--good)">Green</span> = tokenized T-bills (rate floor); <span style="color:var(--yellow)">amber</span> = institutional credit; <span style="color:var(--red)">red</span> = synthetic/frontier. The tier ledger below the table is static research; APY/TVL are live.</p>
+  <p class="note">Live rates for the RWA universe a Lido RWA sleeve would draw from, grouped by risk tier. The columns that matter for curation aren't the APY &mdash; they're <b>backing</b>, <b>redemption terms</b> (vs a 48h vault SLA), and <b>oracle type</b> (attested-NAV assets are the xUSD failure pattern in a suit). <span style="color:var(--good)">Green</span> = tokenized T-bills (rate floor); <span style="color:var(--yellow)">amber</span> = institutional credit; <span style="color:var(--red)">red</span> = synthetic/frontier. The tier ledger below the table is static research (2026-07-18); APY/TVL are live.</p>
   <div class="tiles" id="rwaTiles"></div>
   <div class="card"><div class="scroll" id="rwaTable"><div class="skel">Loading RWA rates&hellip;</div></div>
-    <p class="note" style="margin:14px 0 0;font-size:12px"><b>Curation read:</b> tokenized T-bills yield ~3.4&ndash;3.6% &mdash; at/below sUSDS, so they add diversification, not yield. The sellable premium is credit &amp; term (Maple ~4.8%, Midas ~10%+). USD.ai (7.2%) and Avant (8%) are the frontier: real yield, but USD.ai carries ~48% single-borrower concentration and a ~30-day redemption queue &mdash; a satellite (capped, via dated Pendle PTs), never an anchor. Every non-T-bill line here prices on an <b>attested NAV</b>, not a market &mdash; the oracle-deviation workflow is the whole ballgame.</p>
+    <p class="note" style="margin:14px 0 0;font-size:12px"><b>Curation read:</b> tokenized T-bills yield ~3.4&ndash;3.6% &mdash; at/below sUSDS, so they add diversification, not yield. The sellable premium is credit &amp; term (Maple ~4.8%, Midas ~10%+). USD.ai (7.2%) and Avant (8%) are the frontier: real yield, but USD.ai carries ~48% single-borrower concentration (USD.ai disclosures, Jul-26) and a ~30-day redemption queue &mdash; a satellite (capped, via dated Pendle PTs), never an anchor. Every non-T-bill line here prices on an <b>attested NAV</b>, not a market &mdash; the oracle-deviation workflow is the whole ballgame. <i>(Prose rates spot-checked 2026-07-20; the table above is live.)</i></p>
   </div>
 
   <h2><span class="idx">04</span>90-day APY trend</h2>
@@ -851,7 +851,7 @@ async function loadVaultStats(cfgs) {
     const p = px(c), pendUsd = c.pendShares != null ? c.pendShares * p : null;
     c._base = [
       { k: "TVL", v: fmt$(c.tvl), d: c.apy != null ? c.apy.toFixed(2) + "% APY 14d" : "" },
-      { k: "share price", v: "$" + p.toFixed(2), d: c.lp7 != null ? (c.lp7 >= 0 ? "+" : "") + c.lp7.toFixed(3) + "% 7d" : "" },
+      { k: "share price", v: p ? "$" + p.toFixed(2) : "—", d: c.lp7 != null ? (c.lp7 >= 0 ? "+" : "") + c.lp7.toFixed(3) + "% 7d" : "" },
       { k: "withdraw queue", v: pendUsd != null ? fmt$(pendUsd) : "—", d: pendUsd != null ? (c.tvl ? (pendUsd / c.tvl * 100).toFixed(2) : "?") + "% of TVL · " + c.pendShares.toFixed(0) + " shares" : "burn-at-request" },
       { k: "idle buffer", v: c.idle != null ? c.idle.toFixed(1) + "%" : "—", d: "vs " + c.redeemInt + " redeem interval" },
       { k: "last oracle report", v: c.reportAge != null ? c.reportAge.toFixed(1) + "h ago" : "—", d: "20h min cadence · fees accrue at report" },
@@ -1038,10 +1038,11 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const idToName = {}; fetchList.forEach(([n, id]) => { if (!(id in idToName)) idToName[id] = n; });
   const statById = id => stat(idToName[id]);
 
-  const ethTvl = mEth ? (mEth.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / 1e8, 0) : null;
-  const usdTvl = mUsd ? (mUsd.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / 1e8, 0) : null;
+  const ethTvl = mEth ? (mEth.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / Math.pow(10, +(a.tvl?.usd_decimals ?? 8)), 0) : null;
+  const usdTvl = mUsd ? (mUsd.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / Math.pow(10, +(a.tvl?.usd_decimals ?? 8)), 0) : null;
   const ethApy = mEth ? mEth.apy : null, usdApy = mUsd ? mUsd.apy : null;
   const sSteth = stat("Lido stETH"), sSusds = stat("Sky sUSDS (SSR)");
+  const ethBenchLive = stethApr != null || !!sSteth;
   const ETH_BENCH = stethApr ?? (sSteth ? sSteth.apy : 2.2);
   const USD_BENCH = sSusds ? sSusds.apy : 3.6;
 
@@ -1055,8 +1056,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   // ticker ribbon — the live rates that price the whole board
   const tick = [];
   const tk = (l, v, sfx) => { if (v != null && isFinite(v)) tick.push(`<span>${l}<b>${v.toFixed(2)}${sfx || "%"}</b></span>`); };
-  tk("stETH APR", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
-  tk("sUSDS", USD_BENCH); tick.push(`<span>SOFR<b>3.63%</b></span>`);
+  if (ethBenchLive) tk("stETH APR", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
+  if (sSusds) tk("sUSDS", USD_BENCH);
   tk("USDe borrow", borrowMap[BORROW.usdeEth]); tk("USDT0·Plasma borrow", borrowMap[BORROW.usdt0Plasma]);
   tk("EarnETH", ethApy); tk("EarnUSD", usdApy);
   $("ticker").innerHTML = tick.join("");
@@ -1067,7 +1068,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const tiles = [];
   const cls = v => v >= 0 ? "up" : "down";
   if (ethApy != null) {
-    tiles.push({ k: "EarnETH vs stETH baseline", v: pp(ethApy - ETH_BENCH), c: cls(ethApy - ETH_BENCH), d: `${ethApy.toFixed(2)}% (14d TW) vs stETH <b>${ETH_BENCH.toFixed(2)}%</b> live` });
+    tiles.push({ k: "EarnETH vs stETH baseline", v: pp(ethApy - ETH_BENCH), c: cls(ethApy - ETH_BENCH), d: `${ethApy.toFixed(2)}% (14d TW) vs stETH <b>${ETH_BENCH.toFixed(2)}%</b> ${ethBenchLive ? "live" : "static fallback"}` });
     tiles.push({ k: "EarnETH vs peer median", v: pp(ethApy - ethPeerMed), c: cls(ethApy - ethPeerMed), d: `curated-ETH peer median <b>${ethPeerMed.toFixed(2)}%</b>` });
   }
   if (usdApy != null) {
