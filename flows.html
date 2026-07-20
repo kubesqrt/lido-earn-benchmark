@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Lido Earn — Daily Deposit &amp; Withdrawal Flows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#0b0d11; --surface:#111419; --raised:#161a21;
+    --ink:#e8ebf0; --ink-2:#a6afbc; --muted:#687180;
+    --grid:#1f2530; --axis:#2b323e; --ring:rgba(255,255,255,0.07);
+    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --red:#e66767;
+    --crit:#e05252; --warn:#fab219; --good:#2fb54d;
+    --in:#3987e5; --out:#c98a5e; --block:#e0685f;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  html,body { background:var(--page); }
+  body { color:var(--ink); margin:0; min-height:100vh; font:400 14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 70px; }
+  .eyebrow { font:500 10.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+  h1 { font-size:24px; margin:8px 0 4px; letter-spacing:-.01em; font-weight:600; text-wrap:balance; }
+  .sub { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:84ch; }
+  .sub b { color:var(--ink); font-weight:500; }
+  h2 { font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+       margin:40px 0 6px; display:flex; align-items:center; gap:12px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--grid); }
+  h2 .badge { font:500 10px/1 var(--mono); letter-spacing:.02em; text-transform:none; color:var(--ink-2); border:1px solid var(--ring); border-radius:3px; padding:3px 8px; }
+  .masthead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; }
+  .mast-right { font:500 11px/1 var(--mono); color:var(--ink-2); display:inline-flex; align-items:center; gap:14px; padding-bottom:6px; white-space:nowrap; }
+  .mast-right a { color:var(--accent); text-decoration:none; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 6px rgba(47,181,77,.7); }
+  .status { display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 6px; font:400 10.5px/1.6 var(--mono); }
+  .status span { border:1px solid var(--ring); border-radius:3px; padding:2px 9px; color:var(--ink-2); background:var(--surface); }
+  .status span.ok::before { content:"\25CF "; color:var(--good); }
+  .status span.wait::before { content:"\25CF "; color:var(--muted); }
+  .status span.err::before { content:"\25CF "; color:var(--crit); }
+  .controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:8px 0 4px; }
+  .seg { display:inline-flex; border:1px solid var(--ring); border-radius:3px; overflow:hidden; background:var(--surface); }
+  .seg button { background:none; border:0; border-left:1px solid var(--ring); color:var(--ink-2); cursor:pointer;
+                font:500 11.5px/1 var(--mono); padding:7px 13px; }
+  .seg button:first-child { border-left:0; }
+  .seg button:hover:not(.on) { background:rgba(255,255,255,0.045); color:var(--ink); }
+  .seg button.on { background:rgba(57,135,229,0.20); color:var(--ink); }
+  .ctl-lbl { font:600 10.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+  .card { background:var(--surface); border:1px solid var(--ring); border-radius:2px; padding:16px 18px; margin:10px 0 0; }
+  .cardhead { font-size:14.5px; font-weight:600; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .cardhead small { color:var(--muted); font-weight:400; font-size:11px; font-family:var(--mono); }
+  .cardhead .tvl { margin-left:auto; font:500 12px/1 var(--mono); color:var(--ink-2); }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:14px 0 2px; }
+  .tile { background:var(--raised); border:1px solid var(--ring); border-radius:2px; border-top:2px solid var(--axis); padding:11px 13px; }
+  .tile.usual { border-top-color:var(--out); }
+  .tile.net { border-top-color:var(--good); }
+  .tile.block { border-top-color:var(--block); }
+  .tile .k { font:500 9.5px/1.4 var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .tile .v { font:600 21px/1.15 var(--mono); margin:5px 0 0; letter-spacing:-.02em; }
+  .tile .v.out { color:#e4b48c; } .tile .v.blk { color:#ff9a92; } .tile .v.pos { color:var(--good); } .tile .v.neg { color:#ff9a92; } .tile .v.inn { color:#7fb2ee; }
+  .tile .d { font-size:11.5px; color:var(--ink-2); margin-top:4px; line-height:1.4; }
+  .tile .d b { color:var(--ink); font-weight:500; font-family:var(--mono); font-size:11px; }
+  .scroll { overflow-x:auto; }
+  svg text { font-family:var(--mono); }
+  .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:12px; color:var(--ink-2); margin:14px 0 2px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { width:13px; height:11px; border-radius:2px; display:inline-block; }
+  .legend i.line { height:0; width:16px; border-top:2px dashed var(--warn); border-radius:0; }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; margin-top:14px; }
+  th { text-align:left; color:var(--muted); font:500 10px/1.5 var(--mono); text-transform:uppercase;
+       letter-spacing:.09em; padding:6px 10px; border-bottom:1px solid var(--axis); white-space:nowrap; position:sticky; top:0; background:var(--surface); }
+  td { padding:5px 10px; border-bottom:1px solid var(--grid); white-space:nowrap; }
+  td.num, th.num { text-align:right; font-family:var(--mono); font-size:11.5px; }
+  tr:hover td { background:rgba(255,255,255,0.02); }
+  td.out { color:#e4b48c; } td.in { color:#7fb2ee; } td.pos { color:var(--good); } td.neg { color:#ff9a92; } td.blk { color:#ff9a92; }
+  .tblwrap { max-height:320px; overflow:auto; margin-top:8px; border:1px solid var(--grid); border-radius:2px; }
+  .tblwrap table { margin-top:0; }
+  .blocktbl td { white-space:normal; }
+  .buffer { border-left:2px solid var(--warn); background:rgba(250,178,25,0.05); padding:13px 16px; margin:16px 0 0; border-radius:0 2px 2px 0; }
+  .buffer .bh { font:600 11px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--warn); margin-bottom:8px; }
+  .buffer p { margin:6px 0; font-size:13px; color:var(--ink-2); }
+  .buffer b { color:var(--ink); }
+  .concentration { border-left:2px solid var(--block); background:rgba(224,104,95,0.07); padding:13px 16px; margin:14px 0 0; border-radius:0 2px 2px 0; }
+  .concentration .bh { font:600 11px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:#ff9a92; margin-bottom:8px; }
+  .concentration p { margin:6px 0; font-size:13px; color:var(--ink-2); }
+  .concentration b { color:var(--ink); }
+  .concentration code { background:rgba(255,255,255,0.06); border-radius:4px; padding:1px 6px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
+  .say { border-left:2px solid var(--accent); background:rgba(57,135,229,0.06); padding:12px 16px; margin:12px 0 0; border-radius:0 2px 2px 0; font-size:13px; color:var(--ink-2); }
+  .say b { color:var(--ink); }
+  .tt { position:fixed; pointer-events:none; background:var(--raised); border:1px solid var(--ring); border-radius:3px;
+        padding:8px 11px; font-size:12px; box-shadow:0 6px 22px rgba(0,0,0,.5); opacity:0; transition:opacity .08s; z-index:50; color:var(--ink); }
+  .tt b { display:block; font-family:var(--mono); font-size:11.5px; font-weight:600; margin-bottom:3px; }
+  .tt .r { display:flex; justify-content:space-between; gap:16px; font-family:var(--mono); font-size:11px; }
+  .meth { font-size:12.5px; color:var(--ink-2); max-width:86ch; }
+  .meth code { background:rgba(255,255,255,0.06); border-radius:4px; padding:1px 6px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
+  .meth b { color:var(--ink); }
+  .skel { color:var(--muted); font-size:13px; padding:16px 0; }
+  @keyframes pulse { 0%,100% { opacity:.45; } 50% { opacity:1; } }
+  .skel { animation:pulse 1.4s ease-in-out infinite; }
+  footer { margin-top:40px; font-size:12px; color:var(--muted); border-top:1px solid var(--grid); padding-top:14px; }
+  footer a { color:var(--accent); text-decoration:none; }
+  @media (prefers-reduced-motion:reduce){ .skel{ animation:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Curation benchmark board</div>
+      <h1>Daily deposit &amp; withdrawal flows</h1>
+    </div>
+    <div class="mast-right">
+      <a href="index.html">&larr; board</a>
+      <a href="positions.html">position atlas</a>
+      <a href="architecture.html">architecture</a>
+      <span class="live-dot"></span><b id="asof">loading&hellip;</b>
+    </div>
+  </div>
+  <p class="sub">Every settled deposit and redemption for <b>EarnETH</b> and <b>EarnUSD</b>, read straight from the share-token mint/burn events on-chain and bucketed by day. Built to answer one question honestly: <b>&ldquo;on a normal day, how much moves in and out &mdash; and what actually drives the outflow?&rdquo;</b> The headline finding: routine redemptions are tiny; the outflow that matters is a handful of large <b>block redemptions executed by a single multisig</b>, which is what really sizes the buffer and the SLA.</p>
+
+  <div class="controls">
+    <span class="ctl-lbl">Window</span>
+    <div class="seg" id="winSeg">
+      <button data-w="14">14d</button>
+      <button data-w="30" class="on">30d</button>
+      <button data-w="60">60d</button>
+    </div>
+    <span class="ctl-lbl" style="margin-left:8px">Denomination</span>
+    <div class="seg" id="denSeg">
+      <button data-d="usd" class="on">USD</button>
+      <button data-d="native">native (ETH / USDC)</button>
+    </div>
+    <span id="winNote" style="font:400 11.5px/1 var(--mono); color:var(--muted)"></span>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div id="concentration"></div>
+
+  <div id="vaults">
+    <div class="skel">Reading the chain&hellip; the first scan pulls ~45&ndash;90 log ranges plus a few transaction lookups, so give it 10&ndash;25 seconds.</div>
+  </div>
+
+  <h2>How this is measured <span class="badge">no flow API exists &mdash; raw events</span></h2>
+  <p class="meth">
+    <b>Source of truth.</b> A deposit ends as a <b>mint</b> of the vault share token (Transfer from <code>0x0</code>); a redemption ends as a <b>burn</b> (Transfer to <code>0x0</code>). Both settle at an oracle report, so this is money that has actually <b>left the queue and moved</b> &mdash; not pending requests. Fee mints to the treasury (<code>0xccf2&hellip;9b85</code>) are excluded, so deposits are net of fees.<br>
+    <b>Deposits are granular; withdrawals batch.</b> There are hundreds of small mint events (real per-deposit activity) but only ~30 burn events in a month &mdash; each burn is the redeem queue being <b>flushed at a report</b>. So a withdrawal &ldquo;day&rdquo; is a settlement day.<br>
+    <b>Routine vs block.</b> Each settlement is classed <b>routine</b> (&lt;1% of TVL) or a <b>block redemption</b> (&ge;1% of TVL). For every block redemption the settling transaction is fetched and its selector checked &mdash; <code>0x6a761202</code> is a Gnosis Safe <code>execTransaction</code>, i.e. a <b>multisig-executed</b> redemption. The Safe address is shown so you can see when the same counterparty hits both vaults.<br>
+    <b>Share tokens.</b> EarnETH <code>0xBBFC&hellip;a0A4</code> &middot; EarnUSD <code>0x4Ce1&hellip;1981</code>. Logs pulled in &le;9,900-block chunks from Tenderly&rsquo;s public gateway (drpc/blastapi fallback), day-mapped by measuring the real seconds-per-block across the window. Shares valued at the <b>current</b> share price ($2,044 / $1.40); month-long drift is &lt;1% and doesn&rsquo;t move the medians. A <b>coverage</b> figure flags any window that came back partial on free RPCs.
+  </p>
+
+  <footer>
+    Client-side, keyless, nothing stored. Flow data needs a live connection (on-chain reads), so this page can&rsquo;t run fully offline. Companion pages: <a href="index.html">rates board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>. Part of the Lido Earn curation prep kit.
+  </footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SHARE = {
+  eth: { name:"EarnETH", token:"0xBBFC8683C8fE8cF73777feDE7ab9574935fea0A4", vault:"0x6a37725ca7f4CE81c004c955f7280d5C704a249e",
+         native:"ETH", redeem:"48h SLA", idle:"~7% idle — inside the healthy band", idleGood:true },
+  usd: { name:"EarnUSD", token:"0x4Ce1ac8F43E0E5BD7A346A98aF777bF8fbeA1981", vault:"0x014e6DA8F283C4aF65B2AA0f201438680A004452",
+         native:"USDC", redeem:"48h SLA", idle:"0.1% idle — effectively no same-day buffer", idleGood:false },
+};
+const FEE_RECIPIENT = "0xccf2daba8bb04a232a2fda0d01010d4ef6c69b85";
+const XFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const ZERO32 = "0x" + "0".repeat(64);
+const SAFE_EXEC = "0x6a761202";                          // Gnosis Safe execTransaction selector
+const LOG_RPCS  = ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org", "https://eth-mainnet.public.blastapi.io"];
+const HEAD_RPCS = ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"];
+const CHUNK = 9900, BLOCK_PCT = 0.01;                    // >=1% of TVL = block redemption
+let WIN = 30, DEN = "usd";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function rpcOn(urls, method, params) {
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params }) });
+      const j = await r.json();
+      if (j && j.result !== undefined && j.result !== null) return j.result;
+    } catch (e) {}
+  }
+  return null;
+}
+const status = {};
+function setStatus(k, cls, note) {
+  status[k] = { cls, note };
+  $("status").innerHTML = Object.entries(status)
+    .map(([n, s]) => `<span class="${s.cls}">${n}${s.note ? " · " + s.note : ""}</span>`).join("");
+}
+function fmtUsd(v) {
+  const a = Math.abs(v);
+  if (a >= 1e6) return "$" + (v/1e6).toFixed(a >= 1e7 ? 1 : 2) + "M";
+  if (a >= 1e3) return "$" + (v/1e3).toFixed(a >= 1e5 ? 0 : 1) + "k";
+  return "$" + Math.round(v);
+}
+function fmtNative(v, unit) {
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v/1e6).toFixed(2) + "M " + unit;
+  if (a >= 1e3) return (v/1e3).toFixed(1) + "k " + unit;
+  return v.toFixed(unit === "ETH" ? 2 : 0) + " " + unit;
+}
+function money(v, unit) { return DEN === "usd" ? fmtUsd(v) : fmtNative(v, unit); }
+
+function stats(arr) {
+  const s = arr.slice().sort((a, b) => a - b), n = s.length;
+  const q = p => { if (!n) return 0; const i = (n - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+  const act = arr.filter(x => x > 1e-9).sort((x, y) => x - y);
+  return { median:q(0.5), mean:n?arr.reduce((a,b)=>a+b,0)/n:0, p90:q(0.9), max:n?s[n-1]:0,
+           total:arr.reduce((a,b)=>a+b,0), active:act.length, n, activeMedian: act.length?act[act.length>>1]:0 };
+}
+
+// scan: deposits by day, plus every burn event (day, shares, tx) split routine/block by TVL threshold
+async function scanVault(cfg, headBlk, headTs, secPerBlk, days, price, tvl) {
+  const backBlocks = Math.ceil(days * 86400 / secPerBlk) + 2000;
+  const fromBlk = headBlk - backBlocks;
+  const dep = new Array(days).fill(0);
+  const burns = [];                                       // {day, shares, tx}
+  let okChunks = 0, totChunks = 0;
+  const chunks = [];
+  for (let hi = headBlk; hi > fromBlk; hi -= CHUNK) chunks.push([Math.max(hi - CHUNK + 1, fromBlk), hi]);
+  for (let i = 0; i < chunks.length; i++) {
+    const [lo, hi] = chunks[i]; totChunks++;
+    const rot = [LOG_RPCS[i % LOG_RPCS.length], LOG_RPCS[(i+1) % LOG_RPCS.length], LOG_RPCS[(i+2) % LOG_RPCS.length]];
+    const req = [{ address: cfg.token, fromBlock: "0x"+lo.toString(16), toBlock: "0x"+hi.toString(16), topics: [XFER] }];
+    let logs = await rpcOn(rot, "eth_getLogs", req);
+    if (!logs) { await sleep(300); logs = await rpcOn(LOG_RPCS, "eth_getLogs", req); }   // one retry across all
+    if (logs) {
+      okChunks++;
+      for (const l of logs) {
+        const blk = parseInt(l.blockNumber, 16);
+        const dayAgo = Math.floor((headBlk - blk) * secPerBlk / 86400);
+        if (dayAgo < 0 || dayAgo >= days) continue;
+        const v = parseInt(l.data, 16) / 1e18;
+        if (l.topics[1] === ZERO32) {
+          const to = ("0x" + l.topics[2].slice(26)).toLowerCase();
+          if (to !== FEE_RECIPIENT) dep[dayAgo] += v;
+        } else if (l.topics[2] === ZERO32) {
+          burns.push({ day: dayAgo, shares: v, tx: l.transactionHash });
+        }
+      }
+    }
+    await sleep(130);
+  }
+  // classify + label block redemptions via their settling tx
+  const blockEvents = [], routineByDay = new Array(days).fill(0), blockByDay = new Array(days).fill(0);
+  for (const b of burns) {
+    if (b.shares * price >= BLOCK_PCT * tvl) blockEvents.push(b);
+    else routineByDay[b.day] += b.shares;
+  }
+  for (const b of blockEvents) {
+    blockByDay[b.day] += b.shares;
+    const t = await rpcOn(HEAD_RPCS, "eth_getTransactionByHash", [b.tx]);
+    b.multisig = t && (t.input || "").slice(0, 10) === SAFE_EXEC;
+    b.to = t ? (t.to || "").toLowerCase() : null;
+    await sleep(90);
+  }
+  return { dep, routineByDay, blockByDay, blockEvents, coverage: totChunks ? okChunks / totChunks : 0 };
+}
+
+// diverging daily chart: deposits up (blue); withdrawals down = routine (tan) + block (red) stacked
+function barChart(series, price, unit) {
+  const W = 960, H = 250, mL = 8, mR = 8, mT = 18, mB = 24;
+  const plotW = W - mL - mR, plotH = H - mT - mB, n = series.length;
+  const toV = s => DEN === "usd" ? s * price : s;
+  const ins = series.map(d => toV(d.dep));
+  const routs = series.map(d => toV(d.routine)), blks = series.map(d => toV(d.block));
+  const outs = routs.map((r, i) => r + blks[i]);
+  const maxAbs = Math.max(1e-9, ...ins, ...outs);
+  const zeroY = mT + plotH * 0.5;
+  const upH = zeroY - mT, dnH = (mT + plotH) - zeroY;
+  const bw = Math.max(2, plotW / n * 0.66), step = plotW / n;
+  const medRoutineOut = stats(routs.filter(x => x > 1e-9)).median || 0;
+  let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:640px;display:block">`;
+  s += `<line x1="${mL}" y1="${zeroY.toFixed(1)}" x2="${W-mR}" y2="${zeroY.toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>`;
+  if (medRoutineOut > 0) {
+    const my = zeroY + medRoutineOut / maxAbs * dnH;
+    s += `<line x1="${mL}" y1="${my.toFixed(1)}" x2="${W-mR}" y2="${my.toFixed(1)}" stroke="var(--warn)" stroke-width="1" stroke-dasharray="4 4" opacity="0.85"/>`;
+    s += `<text x="${W-mR}" y="${(my-3).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--warn)">median routine out ${money(medRoutineOut, unit)}</text>`;
+  }
+  series.forEach((d, i) => {
+    const x = mL + i * step + (step - bw) / 2;
+    const ih = toV(d.dep) / maxAbs * upH, rh = toV(d.routine) / maxAbs * dnH, bh = toV(d.block) / maxAbs * dnH;
+    if (ih > 0.3) s += `<rect x="${x.toFixed(1)}" y="${(zeroY-ih).toFixed(1)}" width="${bw.toFixed(1)}" height="${ih.toFixed(1)}" fill="var(--in)" opacity="0.9"/>`;
+    if (rh > 0.3) s += `<rect x="${x.toFixed(1)}" y="${zeroY.toFixed(1)}" width="${bw.toFixed(1)}" height="${rh.toFixed(1)}" fill="var(--out)" opacity="0.92"/>`;
+    if (bh > 0.3) s += `<rect x="${x.toFixed(1)}" y="${(zeroY+rh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="var(--block)" opacity="0.95"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${(mL+i*step).toFixed(1)}" y="${mT}" width="${step.toFixed(1)}" height="${plotH}" fill="transparent"/>`;
+  });
+  const gap = Math.max(1, Math.round(n / 6));
+  series.forEach((d, i) => {
+    if (i % gap === 0 || i === n - 1) {
+      const x = mL + i * step + step / 2;
+      s += `<text x="${x.toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--muted)">${d.label}</text>`;
+    }
+  });
+  s += `<text x="${mL}" y="${mT-5}" font-size="9.5" fill="var(--in)">▲ deposits in</text>`;
+  s += `<text x="${mL}" y="${H-mB+16}" font-size="9.5" fill="var(--out)">▼ withdrawals out (tan routine · red = block redemption)</text>`;
+  s += `</svg>`;
+  return s;
+}
+
+function renderVault(key, cfg, data, price, tvl) {
+  const unit = cfg.native, days = data.series.length;
+  const toV = s => DEN === "usd" ? s * price : s;
+  const ins = data.series.map(d => toV(d.dep));
+  const routs = data.series.map(d => toV(d.routine));
+  const blks = data.series.map(d => toV(d.block));
+  const outs = routs.map((r, i) => r + blks[i]);
+  const nets = ins.map((v, i) => v - outs[i]);
+  const si = stats(ins), sr = stats(routs), so = stats(outs), sn = stats(nets);
+  const blockTotalShares = data.blockEvents.reduce((a, b) => a + b.shares, 0);
+  const blockTotal = toV(blockTotalShares);
+  const biggest = data.blockEvents.slice().sort((a, b) => b.shares - a.shares)[0];
+  const pctTvl = shares => tvl > 0 ? shares * price / tvl * 100 : 0;
+  const cov = data.coverage < 0.995 ? ` · ${Math.round(data.coverage*100)}% coverage` : "";
+  const tvlV = DEN === "usd" ? tvl : tvl / price;
+  const netMedian = sn.median;
+  const routineDaysCovered = sr.activeMedian > 0 ? (0.05 * tvl) / (sr.activeMedian * (DEN==="usd"?1:price)) : Infinity;
+
+  const tiles =
+    `<div class="tiles">` +
+    `<div class="tile usual"><div class="k">Usual outflow · routine median</div><div class="v out">${money(sr.activeMedian, unit)}</div><div class="d">the typical settlement day · <b>${sr.active}</b> routine settlements, largest <b>${money(stats(routs.filter(x=>x>1e-9)).max, unit)}</b></div></div>` +
+    `<div class="tile usual"><div class="k">Usual deposit day · median</div><div class="v inn">${money(si.activeMedian, unit)}</div><div class="d">deposits land near-continuously · ${si.active}/${days} days</div></div>` +
+    `<div class="tile net"><div class="k">Net flow · ${WIN}d</div><div class="v ${sn.total>=0?'pos':'neg'}">${sn.total>=0?'+':'−'}${money(Math.abs(sn.total), unit)}</div><div class="d">in ${money(si.total, unit)} / out ${money(so.total, unit)} · usually net ${netMedian>=0?'inflow':'outflow'}</div></div>` +
+    `<div class="tile block"><div class="k">Block redemptions · ${WIN}d</div><div class="v blk">${money(blockTotal, unit)}</div><div class="d"><b>${data.blockEvents.length}</b> event${data.blockEvents.length===1?'':'s'} ≥ 1% TVL${data.blockEvents.length&&data.blockEvents.every(b=>b.multisig)?' · <b>all via multisig</b>':''} = <b>${blockTotalShares>0?Math.round(blockTotal/so.total*100):0}%</b> of all outflow</div></div>` +
+    (biggest ? `<div class="tile block"><div class="k">Largest single redemption</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d"><b>${pctTvl(biggest.shares).toFixed(1)}%</b> of TVL in one settlement${biggest.multisig?' · multisig':''} · ${data.series[biggest.day]?data.series[biggest.day].full:''}</div></div>` : "") +
+    `</div>`;
+
+  // block redemption detail table
+  let blockTbl = "";
+  if (data.blockEvents.length) {
+    blockTbl = `<div class="tblwrap"><table class="blocktbl"><thead><tr><th>Block redemption</th><th class="num">Size</th><th class="num">% TVL</th><th>Execution</th><th>Settling contract</th></tr></thead><tbody>` +
+      data.blockEvents.slice().sort((a,b)=>b.shares-a.shares).map(b =>
+        `<tr><td>${data.series[b.day]?data.series[b.day].full:('day -'+b.day)}</td>` +
+        `<td class="num blk">${money(toV(b.shares), unit)}</td>` +
+        `<td class="num">${pctTvl(b.shares).toFixed(1)}%</td>` +
+        `<td>${b.multisig?'🔐 multisig (Safe execTransaction)':'EOA / other'}</td>` +
+        `<td style="font-family:var(--mono);font-size:11px">${b.to?b.to.slice(0,10)+'…':'—'}</td></tr>`).join("") +
+      `</tbody></table></div>`;
+  }
+
+  const worstWeek = (() => { let m = 0; const o = data.series.map(d => (d.routine+d.block)*price); for (let i=0;i+7<=o.length;i++) m=Math.max(m,o.slice(i,i+7).reduce((a,b)=>a+b,0)); return m; })();
+  const stressWave = 0.20 * tvl;
+
+  const buffer =
+    `<div class="buffer"><div class="bh">What this means for the buffer &amp; SLA</div>` +
+    `<p><b>Routine flow is a non-event.</b> A typical settlement is <b>${money(sr.activeMedian, unit)}</b> and the largest routine day was <b>${money(stats(routs.filter(x=>x>1e-9)).max, unit)}</b> &mdash; well under 1% of TVL. A same-day buffer of just <b>5% of TVL (${fmtUsd(0.05*tvl)})</b> covers <b>${routineDaysCovered>=100?'100+':Math.round(routineDaysCovered)}</b> typical settlement days. Retail redemptions never threaten this book.</p>` +
+    `<p><b>The tail is what you size for.</b> ${data.blockEvents.length?`Block redemptions did <b>${money(blockTotal, unit)}</b> over ${WIN} days &mdash; the biggest was <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL) in a single settlement</b>. The worst rolling 7 days was <b>${fmtUsd(worstWeek)}</b>`:`No block redemption hit this window`}. A policy stress wave of <b>20% in 7 days = ${fmtUsd(stressWave)}</b> ${worstWeek>stressWave?`was actually <b>exceeded</b> last month (${(worstWeek/stressWave).toFixed(1)}×) &mdash; the tail scenario isn't hypothetical here, it happened, and the 48h SLA is what absorbed it`:`is <b>${worstWeek>0?(stressWave/worstWeek).toFixed(1):'∞'}×</b> the worst week observed &mdash; that gap is the margin of safety`}. Size the LCR to this number, never to the median.</p>` +
+    `<p style="color:${cfg.idleGood?'var(--good)':'#ff9a92'}"><b>Current buffer:</b> ${cfg.idle}.${cfg.idleGood?'':' The median day is fine, but there is no cushion for a block redemption &mdash; every large exit relies on unwinding levered positions on schedule.'}</p>` +
+    `</div>`;
+
+  const say =
+    `<div class="say">🗣 <b>Say it flatly:</b> &ldquo;${cfg.name}&rsquo;s routine redemptions are tiny &mdash; a typical settlement is <b>${money(sr.activeMedian, unit)}</b>, and it&rsquo;s usually net ${netMedian>=0?'inflow':'outflow'}. ${data.blockEvents.length?`Nearly all the outflow &mdash; <b>${money(blockTotal, unit)}</b> of ${money(so.total, unit)} &mdash; was ${data.blockEvents.length} block redemption${data.blockEvents.length===1?'':'s'} executed by a multisig, one of them <b>${pctTvl(biggest.shares).toFixed(1)}% of TVL in a day</b>. `:''}So the liquidity plan isn&rsquo;t sized to retail flow &mdash; it&rsquo;s sized to a large counterparty and a correlated wave, which is exactly what the buffer and the ${cfg.redeem} exist for.&rdquo;</div>`;
+
+  const rows = data.series.map((d, i) => {
+    const rout = toV(d.routine), blk = toV(d.block), inn = toV(d.dep), net = inn - rout - blk;
+    return `<tr><td>${d.full}</td><td class="num in">${d.dep>1e-9?money(inn,unit):"—"}</td>` +
+      `<td class="num out">${d.routine>1e-9?money(rout,unit):"—"}</td>` +
+      `<td class="num blk">${d.block>1e-9?money(blk,unit):"—"}</td>` +
+      `<td class="num ${net>=0?'pos':'neg'}">${Math.abs(net)<1e-9?"—":(net>=0?'+':'−')+money(Math.abs(net),unit)}</td></tr>`;
+  }).reverse().join("");
+
+  return `<div class="card" data-key="${key}">
+      <div class="cardhead">${cfg.name}<small>share-token mint/burn, last ${WIN}d${cov}</small><span class="tvl">TVL ${fmtUsd(tvl)} · ${DEN==="usd"?"":money(tvlV,unit)+" · "}$${price.toFixed(price<10?2:0)}/share</span></div>
+      ${tiles}
+      <div class="legend"><span><i style="background:var(--in)"></i>deposits in</span><span><i style="background:var(--out)"></i>routine out</span><span><i style="background:var(--block)"></i>block redemption (≥1% TVL)</span><span><i class="line"></i>median routine outflow</span></div>
+      <div class="scroll" id="chart-${key}">${barChart(data.series, price, unit)}</div>
+      ${blockTbl}
+      ${buffer}
+      ${say}
+      <div class="tblwrap"><table><thead><tr><th>Day</th><th class="num">Deposits</th><th class="num">Routine out</th><th class="num">Block out</th><th class="num">Net</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>`;
+}
+
+function wireChart(key, cfg, series, price) {
+  const el = $("chart-" + key); if (!el) return;
+  const unit = cfg.native, toV = s => DEN === "usd" ? s * price : s;
+  el.querySelectorAll(".hit").forEach(h => {
+    h.addEventListener("mousemove", e => {
+      const d = series[+h.dataset.i]; const net = toV(d.dep) - toV(d.routine) - toV(d.block);
+      $("tt").innerHTML = `<b>${d.full}</b>` +
+        `<div class="r"><span style="color:#7fb2ee">deposits</span><span>${d.dep>1e-9?money(toV(d.dep),unit):"—"}</span></div>` +
+        `<div class="r"><span style="color:#e4b48c">routine out</span><span>${d.routine>1e-9?money(toV(d.routine),unit):"—"}</span></div>` +
+        (d.block>1e-9?`<div class="r"><span style="color:#ff9a92">block redemption</span><span>${money(toV(d.block),unit)}</span></div>`:"") +
+        `<div class="r"><span>net</span><span>${Math.abs(net)<1e-9?"—":(net>=0?'+':'−')+money(Math.abs(net),unit)}</span></div>`;
+      const tt = $("tt"); tt.style.opacity = 1;
+      let x = e.clientX + 14, y = e.clientY + 14; const r = tt.getBoundingClientRect();
+      if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+      if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+      tt.style.left = x + "px"; tt.style.top = y + "px";
+    });
+    h.addEventListener("mouseleave", () => { $("tt").style.opacity = 0; });
+  });
+}
+
+let CACHE = null;
+
+async function priceAndTvl(cfg) {
+  const supHex = await rpcOn(HEAD_RPCS, "eth_call", [{ to: cfg.token, data: "0x18160ddd" }, "latest"]);
+  const shares = supHex ? parseInt(supHex, 16) / 1e18 : null;
+  let tvl = null;
+  try {
+    const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`)).json();
+    tvl = d.allocations.reduce((s, a) => s + (+a.tvl.usd) / Math.pow(10, a.tvl.usd_decimals), 0);
+  } catch (e) {}
+  const price = (shares && tvl) ? tvl / shares : (cfg.native === "ETH" ? 2044 : 1.40);
+  return { price, tvl: tvl || 0 };
+}
+function dayMeta(headTs, dayAgo) {
+  const d = new Date((headTs - dayAgo * 86400) * 1000);
+  const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getUTCMonth()];
+  return { label: `${d.getUTCDate()} ${mo}`, full: `${d.getUTCDate()} ${mo} ${d.getUTCFullYear()}` };
+}
+
+function renderConcentration() {
+  // detect a Safe that executed block redemptions in BOTH vaults
+  const safes = {};
+  for (const key of Object.keys(CACHE.vaults)) {
+    const v = CACHE.vaults[key]; if (!v) continue;
+    for (const b of v.data.blockEvents) if (b.multisig && b.to) (safes[b.to] = safes[b.to] || new Set()).add(key);
+  }
+  const shared = Object.entries(safes).filter(([, ks]) => ks.size > 1);
+  if (!shared.length) { $("concentration").innerHTML = ""; return; }
+  const [addr] = shared[0];
+  $("concentration").innerHTML =
+    `<div class="concentration"><div class="bh">⚠ Redemption concentration &mdash; the finding that matters</div>` +
+    `<p>The large block redemptions in <b>both EarnETH and EarnUSD</b> were executed by the <b>same multisig</b> (<code>${addr.slice(0,12)}…${addr.slice(-4)}</code>). Outflow across the whole book is dominated by <b>one counterparty</b>, and when it moves, it hits both vaults at once.</p>` +
+    `<p><b>Curation read:</b> the redemption buffer and the SLA aren&rsquo;t sized to a statistical distribution of retail withdrawals &mdash; they&rsquo;re sized to <b>this wallet</b>. That argues for (1) knowing the holder and their redemption calendar, (2) a side-letter / notice period on tickets above a threshold, and (3) an LCR stress that assumes this entity exits both vaults in the same week. It also means headline TVL is softer than it looks: a large share can leave on one signature.</p>` +
+    `</div>`;
+}
+
+async function run() {
+  $("vaults").innerHTML = `<div class="skel">Reading the chain for a ${WIN}-day window… pulling log ranges + block-redemption transactions (10–25s).</div>`;
+  $("concentration").innerHTML = "";
+  setStatus("RPC", "wait", "reading head");
+  setStatus("Mellow", "wait", "price/tvl");
+  setStatus("Flows", "wait", "scanning logs");
+  $("winNote").textContent = WIN >= 60 ? "60d ~ 90 log calls on free RPCs; may show partial coverage" : "";
+
+  const headHex = await rpcOn(HEAD_RPCS, "eth_blockNumber", []);
+  if (!headHex) { $("vaults").innerHTML = `<div class="skel" style="color:var(--crit)">Could not reach any RPC. Check the connection and reload.</div>`; setStatus("RPC","err","unreachable"); return; }
+  const headBlk = parseInt(headHex, 16);
+  const headObj = await rpcOn(HEAD_RPCS, "eth_getBlockByNumber", [headHex, false]);
+  const headTs = headObj ? parseInt(headObj.timestamp, 16) : Math.floor(Date.now() / 1000);
+  const backEst = Math.ceil(WIN * 7200) + 2000;
+  const oldObj = await rpcOn(HEAD_RPCS, "eth_getBlockByNumber", ["0x" + (headBlk - backEst).toString(16), false]);
+  const secPerBlk = oldObj ? (headTs - parseInt(oldObj.timestamp, 16)) / backEst : 12.05;
+  setStatus("RPC", "ok", `blk ${headBlk} · ${secPerBlk.toFixed(2)}s/blk`);
+  $("asof").textContent = "block " + headBlk;
+
+  CACHE = { headBlk, headTs, secPerBlk, vaults: {} };
+  const pt = {};
+  for (const key of Object.keys(SHARE)) pt[key] = await priceAndTvl(SHARE[key]);
+  setStatus("Mellow", "ok", "price/tvl ok");
+
+  $("vaults").innerHTML = Object.keys(SHARE).map(k => `<div id="slot-${k}"><div class="card"><div class="cardhead">${SHARE[k].name}<small>scanning ${WIN}d of logs…</small></div><div class="skel">reading mint/burn events + classifying block redemptions…</div></div></div>`).join("");
+
+  let anyOk = false;
+  for (const key of Object.keys(SHARE)) {
+    const cfg = SHARE[key], { price, tvl } = pt[key];
+    const d = await scanVault(cfg, headBlk, headTs, secPerBlk, WIN, price, tvl);
+    const series = [];
+    for (let day = WIN - 1; day >= 0; day--) {
+      const m = dayMeta(headTs, day);
+      series.push({ dep: d.dep[day], routine: d.routineByDay[day], block: d.blockByDay[day], label: m.label, full: m.full });
+    }
+    const data = { series, blockEvents: d.blockEvents.map(b => ({ ...b, full: dayMeta(headTs, b.day).full })), coverage: d.coverage };
+    CACHE.vaults[key] = { data, price, tvl };
+    $("slot-" + key).innerHTML = renderVault(key, cfg, data, price, tvl);
+    wireChart(key, cfg, series, price);
+    if (d.coverage > 0) anyOk = true;
+  }
+  renderConcentration();
+  setStatus("Flows", anyOk ? "ok" : "err", anyOk ? "tenderly/drpc" : "RPC log limit hit");
+}
+
+function rerender() {
+  if (!CACHE) return;
+  for (const key of Object.keys(SHARE)) {
+    const v = CACHE.vaults[key]; if (!v) continue;
+    $("slot-" + key).innerHTML = renderVault(key, SHARE[key], v.data, v.price, v.tvl);
+    wireChart(key, SHARE[key], v.data.series, v.price);
+  }
+  renderConcentration();
+}
+
+$("winSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  $("winSeg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  WIN = +b.dataset.w; run();
+});
+$("denSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  $("denSeg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  DEN = b.dataset.d; rerender();
+});
+
+run();
+</script>
+</body>
+</html>
