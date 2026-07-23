@@ -1026,10 +1026,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const sgn = (v, b) => { const s = v - b; return `<span style="color:${s >= 0 ? "var(--good)" : "var(--crit)"}">${pp(s)}</span>`; };
   if (ethApy != null)
     tiles.push({ k: "EarnETH APY · 7d TW", v: ethApy.toFixed(2) + "%",
-      d: `vs stETH ${ETH_BENCH.toFixed(2)}% ${ethBenchLive ? "live" : "static fallback"} ${sgn(ethApy, ETH_BENCH)} · peer median ${ethPeerMed.toFixed(2)}% ${sgn(ethApy, ethPeerMed)}` });
+      d: `vs stETH ${ETH_BENCH.toFixed(2)}% ${ethBenchLive ? "live" : "static fallback"} ${sgn(ethApy, ETH_BENCH)}` });
   if (usdApy != null)
     tiles.push({ k: "EarnUSD APY · 7d TW", v: usdApy.toFixed(2) + "%",
-      d: `vs sUSDS ${USD_BENCH.toFixed(2)}% ${sgn(usdApy, USD_BENCH)} · peer median ${usdPeerMed.toFixed(2)}% ${sgn(usdApy, usdPeerMed)}` });
+      d: `vs sUSDS ${USD_BENCH.toFixed(2)}% ${sgn(usdApy, USD_BENCH)}` });
   if (ethApy != null)
     tiles.push({ k: "EarnETH TVL", v: fmt$(ethTvl || 0), d: "live vault TVL" });
   if (usdApy != null)
