@@ -174,7 +174,7 @@
     <div class="card"><div class="legend" id="usdTrendLegend"></div><div class="scroll" id="usdTrend"><div class="skel">Loading&hellip;</div></div></div>
   </div>
   <div class="status" id="status" style="margin-top:44px"></div>
-  <footer>APYs are <b>7-day trailing, net of fees</b> (Earn: Mellow time-weighted · ether.fi: Seven Seas · peers/RWA: DefiLlama · stETH: Lido 7d sMA, APR converted to APY). Borrow rates are current. Refresh to refetch · not investment advice.</footer>
+  <footer><b>Net APY as each vault reports it</b> — Earn: Mellow 7d time-weighted · ether.fi: Seven Seas · curated Morpho vaults (Gauntlet/Steakhouse/Galaxy/…): Morpho API, incl. rewards · plain-lend floors &amp; stETH benchmark: 7-day trailing (DefiLlama · Lido 7d sMA, APR→APY). 30d column is DefiLlama trailing mean. Borrow rates current. Refresh to refetch · not investment advice.</footer>
 
 </div>
 <div class="tt" id="tt"></div>
@@ -552,10 +552,10 @@ function barChart(el, rows, benchmarks, tableEl) {
   });
 }
 function compTable(el, rows, bench) {
-  let h = `<table><tr><th></th><th>Vault</th><th>Strategy</th><th class="num">APY 7d</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
+  let h = `<table><tr><th></th><th>Vault</th><th class="num">Net APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
   rows.forEach((r, ri) => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
-    h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
+    h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td>` +
       `<td class="num">${r.apy.toFixed(2)}%</td><td class="num">${r.m30 != null ? r.m30.toFixed(2) + "%" : "—"}</td>` +
       `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${pp(sp)}</td>` +
       `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td>` +
@@ -962,8 +962,18 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     j("https://api.sevenseas.capital/etherfi/ethereum/performance/" + addr).then(r => [k, r]).catch(() => [k, null])
   )).then(entries => { const ok = entries.filter(e => e[1]).length; setStatus("Seven Seas", ok ? "ok" : "err", ok + "/2"); return Object.fromEntries(entries); });
 
+  const morphoQ = a => a.t === "morphoV2"
+    ? `{ vaultV2s(first:1, where:{address_in:["${a.addr}"], chainId_in:[${a.chain || 1}]}){ items { netApy } } }`
+    : `{ vaultByAddress(address:"${a.addr}", chainId:${a.chain || 1}){ state { netApy } } }`;
+  const pMorpho = Promise.all(Object.entries(POOL_IDS)
+    .filter(([n, c]) => c.allocSource && (c.allocSource.t === "morpho" || c.allocSource.t === "morphoV2"))
+    .map(([n, c]) => fetch("https://api.morpho.org/graphql", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: morphoQ(c.allocSource) }) }).then(r => r.json()).then(d => {
+        const v = c.allocSource.t === "morphoV2" ? ((d.data.vaultV2s.items[0] || {}).netApy) : ((d.data.vaultByAddress.state || {}).netApy);
+        return [n, v != null ? v * 100 : null]; }).catch(() => [n, null])))
+    .then(es => { const ok = es.filter(e => e[1] != null).length; setStatus("Morpho", ok ? "ok" : "err", ok + " vaults"); return Object.fromEntries(es); });
   const mellowHist = key => j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/historical-data?from_timestamp=${Math.floor(Date.now()/1e3) - 180*86400}&days=180`).catch(() => null);
-  const [hist, borrowMap, mEth, mUsd, stethApr, seven, hEth, hUsd] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, mellowHist("earnETH"), mellowHist("earnUSD")]);
+  const [hist, borrowMap, mEth, mUsd, stethApr, seven, morphoNet, hEth, hUsd] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, pMorpho, mellowHist("earnETH"), mellowHist("earnUSD")]);
 
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
     const last = pts[pts.length - 1], last7 = pts.slice(-7).map(p => p.v), last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
@@ -991,6 +1001,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     const a = sevenNet(k), row = rows.find(r => r.name === nm);
     if (row && a != null && isFinite(a)) { row.apy = a; row.srcNet = true; }
   });
+  // curated Morpho vaults: use Morpho's own net APY (DefiLlama's base figure understates them)
+  [ethRows, usdRows].forEach(rows => rows.forEach(r => {
+    const a = morphoNet[r.name]; if (a != null && isFinite(a)) { r.apy = a; r.srcNet = true; }
+  }));
   if (ethApy != null) ethRows.push({ name: "Lido EarnETH", apy: ethApy, m30: mEth ? mEth.apy30 : null, sigma: null, tvl: ethTvl || 0, tag: "meta-vault · levered loops", lido: true });
   if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: mUsd ? mUsd.apy30 : null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
   ethRows.sort((a, b) => b.apy - a.apy); usdRows.sort((a, b) => b.apy - a.apy);
