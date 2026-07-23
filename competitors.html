@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Lido Earn — Overview</title>
+<title>Lido Earn — Competitors</title>
 <style>
   /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
@@ -154,22 +154,22 @@
   <div class="masthead">
     <div>
       <div class="eyebrow">Lido Earn &middot; curation research</div>
-      <h1>Overview</h1>
+      <h1>Competitors</h1>
     </div>
     <div class="mast-right">
-      <nav class="nav"><span class="here">Overview</span><a href="portfolio.html">Portfolio</a><a href="competitors.html">Competitors</a><a href="flows.html">Daily flows</a></nav>
+      <nav class="nav"><a href="index.html">Overview</a><a href="portfolio.html">Portfolio</a><span class="here">Competitors</span><a href="flows.html">Daily flows</a></nav>
       <div class="asof"><b id="asof">loading&hellip;</b></div>
     </div>
   </div>
-  <div class="ticker" id="ticker"><span class="skel">market data loading&hellip;</span></div>
+  <h2><span class="idx">01</span>Competitors &mdash; ETH vaults</h2>
+  <div class="card"><div class="scroll" id="ethBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="ethTable"></div></div>
 
-  <div class="tiles" id="tiles"><div class="skel">Loading benchmark data&hellip;</div></div>
+  <h2><span class="idx">02</span>Competitors &mdash; USD vaults</h2>
+  <div class="card"><div class="scroll" id="usdBars"><div class="skel">Loading&hellip;</div></div><div class="scroll" id="usdTable"></div></div>
 
-  <h2><span class="idx">01</span>90-day trend</h2>
-  <div class="grid2">
-    <div class="card"><div class="legend" id="ethTrendLegend"></div><div class="scroll" id="ethTrend"><div class="skel">Loading&hellip;</div></div></div>
-    <div class="card"><div class="legend" id="usdTrendLegend"></div><div class="scroll" id="usdTrend"><div class="skel">Loading&hellip;</div></div></div>
-  </div>
+  <h2><span class="idx">03</span>RWA rates</h2>
+  <div class="tiles" id="rwaTiles"></div>
+  <div class="card"><div class="scroll" id="rwaTable"><div class="skel">Loading RWA rates&hellip;</div></div></div>
   <div class="status" id="status" style="margin-top:44px"></div>
   <footer>Live benchmark board &middot; refresh to refetch &middot; not investment advice.</footer>
 

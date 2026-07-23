@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Lido Earn — Overview</title>
+<title>Lido Earn — Portfolio</title>
 <style>
   /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
@@ -154,21 +154,41 @@
   <div class="masthead">
     <div>
       <div class="eyebrow">Lido Earn &middot; curation research</div>
-      <h1>Overview</h1>
+      <h1>Portfolio</h1>
     </div>
     <div class="mast-right">
-      <nav class="nav"><span class="here">Overview</span><a href="portfolio.html">Portfolio</a><a href="competitors.html">Competitors</a><a href="flows.html">Daily flows</a></nav>
+      <nav class="nav"><a href="index.html">Overview</a><span class="here">Portfolio</span><a href="competitors.html">Competitors</a><a href="flows.html">Daily flows</a></nav>
       <div class="asof"><b id="asof">loading&hellip;</b></div>
     </div>
   </div>
-  <div class="ticker" id="ticker"><span class="skel">market data loading&hellip;</span></div>
-
-  <div class="tiles" id="tiles"><div class="skel">Loading benchmark data&hellip;</div></div>
-
-  <h2><span class="idx">01</span>90-day trend</h2>
+  <h2><span class="idx">01</span>Earn positions</h2>
   <div class="grid2">
-    <div class="card"><div class="legend" id="ethTrendLegend"></div><div class="scroll" id="ethTrend"><div class="skel">Loading&hellip;</div></div></div>
-    <div class="card"><div class="legend" id="usdTrendLegend"></div><div class="scroll" id="usdTrend"><div class="skel">Loading&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnETH — vault stats <small>on-chain + Mellow API</small></div><div class="vstats" id="vstatsEth"><div class="skel">reading chain&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnUSD — vault stats <small>on-chain + Mellow API</small></div><div class="vstats" id="vstatsUsd"><div class="skel">reading chain&hellip;</div></div></div>
+  </div>
+  <div class="levctl"><span class="lbl">Loop leverage</span>
+    <div class="seg" id="levSeg"><button data-l="m" class="on">measured</button><button data-l="2">2&times;</button><button data-l="3">3&times;</button><button data-l="4">4&times;</button><button data-l="6">6&times;</button></div>
+    <span class="hint">measured = real on-chain balances (Jul 18) · buttons = what-if</span>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="cardhead" id="earnEthHead">EarnETH <small>loading&hellip;</small></div>
+      <div class="spark" id="earnEthSpark"></div>
+      <div class="stackbar" id="earnEthStack"></div>
+      <div class="scroll" id="earnEthAlloc"></div>
+    </div>
+    <div class="card">
+      <div class="cardhead" id="earnUsdHead">EarnUSD <small>loading&hellip;</small></div>
+      <div class="spark" id="earnUsdSpark"></div>
+      <div class="stackbar" id="earnUsdStack"></div>
+      <div class="scroll" id="earnUsdAlloc"></div>
+    </div>
+  </div>
+
+  <h2><span class="idx">02</span>Exposure breakdown</h2>
+  <div class="grid2">
+    <div class="card"><div class="cardhead">EarnETH</div><div id="lensEth"><div class="skel">Loading&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnUSD</div><div id="lensUsd"><div class="skel">Loading&hellip;</div></div></div>
   </div>
   <div class="status" id="status" style="margin-top:44px"></div>
   <footer>Live benchmark board &middot; refresh to refetch &middot; not investment advice.</footer>
