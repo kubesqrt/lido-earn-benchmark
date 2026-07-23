@@ -5,77 +5,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Lido Earn — Architecture Map</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
     color-scheme: dark;
-    --page:#0b0d11; --surface:#111419; --raised:#161a21; --ink:#e8ebf0; --ink-2:#a6afbc; --muted:#687180;
-    --grid:#1f2530; --axis:#2b323e; --ring:rgba(255,255,255,0.07);
-    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --red:#e66767; --good:#2fb54d; --crit:#e05252; --warn:#fab219;
-    --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+    --paper:#101214; --surface:#16181c;
+    --ink:#e2e4e8; --ink-2:#9aa0a8; --muted:#6b7178;
+    --hairline:rgba(255,255,255,.08); --rule:rgba(255,255,255,.14);
+    --grid:rgba(255,255,255,.06); --axis:rgba(255,255,255,.16);
+    --accent:#6d9dc9; --good:#4ea87c; --crit:#d4766c; --warn:#b3925e;
+    --aqua:#5fa08f; --yellow:#b3925e; --violet:#9186ab; --red:#bd7d70;
+    --sans:"Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
   }
   * { box-sizing:border-box; }
-  body { background:var(--page); color:var(--ink); margin:0; font:400 14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
-  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 70px; }
-  .eyebrow { font:500 10.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-  h1 { font-size:24px; margin:8px 0 4px; font-weight:600; letter-spacing:-.01em; }
-  .sub { color:var(--ink-2); font-size:13px; margin:0 0 8px; max-width:80ch; }
-  .nav { font:500 11px/1 var(--mono); margin:10px 0 0; }
-  .nav a { color:var(--accent); text-decoration:none; } .nav a:hover { text-decoration:underline; }
-  h2 { font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:42px 0 6px; display:flex; align-items:center; gap:12px; }
-  h2::after { content:""; flex:1; height:1px; background:var(--grid); }
-  .idx { color:var(--accent); margin-right:8px; }
-  .note { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:78ch; }
-  .note b { color:var(--ink); }
-  .card { background:var(--surface); border:1px solid var(--ring); border-radius:2px; padding:16px 18px; margin:10px 0 0; overflow-x:auto; }
+  body { background:var(--paper); color:var(--ink); margin:0; font:400 14px/1.55 var(--sans);
+         -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  .wrap { max-width:1180px; margin:0 auto; padding:30px 24px 70px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  b, strong { font-weight:400; color:var(--ink); }
+  .eyebrow { font-size:12px; color:var(--muted); }
+  h1 { font-size:25px; margin:4px 0 2px; font-weight:650; letter-spacing:-.01em; }
+  .masthead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+              border-bottom:1px solid var(--rule); padding-bottom:14px; }
+  .mast-right { text-align:right; white-space:nowrap; }
+  .nav { font-size:13px; color:var(--muted); }
+  .nav a, .nav .here { margin-left:18px; }
+  .nav .here { color:var(--ink); font-weight:600; }
+  .sub { color:var(--ink-2); font-size:13px; margin:10px 0 8px; max-width:90ch; }
+  .sub b { color:var(--ink); font-weight:400; }
+  h2 { font-size:17px; font-weight:650; letter-spacing:-.005em; color:var(--ink);
+       margin:46px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--hairline); }
+  .idx { color:var(--muted); font-weight:400; font-size:12px; margin-right:10px; font-variant-numeric:tabular-nums; }
+  .note { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:90ch; }
+  .note b { color:var(--ink); font-weight:400; }
+  .card { margin:14px 0 0; overflow-x:auto; }
   /* ---- flow diagrams ---- */
-  .flow { display:flex; align-items:stretch; gap:0; min-width:720px; }
-  .step { background:var(--raised); border:1px solid var(--axis); border-radius:3px; padding:10px 12px; flex:1; min-width:120px; position:relative; }
+  .flow { display:flex; align-items:stretch; gap:0; min-width:720px; margin-top:12px; }
+  .step { background:var(--surface); border:1px solid var(--axis); padding:10px 12px; flex:1; min-width:120px; position:relative; }
   .step + .step { margin-left:34px; }
-  .step + .step::before { content:"→"; position:absolute; left:-26px; top:50%; transform:translateY(-50%); color:var(--muted); font:600 15px var(--mono); }
+  .step + .step::before { content:"\2192"; position:absolute; left:-26px; top:50%; transform:translateY(-50%); color:var(--muted); font:600 15px var(--sans); }
   .step .t { font:600 12px/1.35 var(--sans); }
   .step .d { font:400 11px/1.5 var(--sans); color:var(--ink-2); margin-top:4px; }
-  .step .m { font:400 10px/1.5 var(--mono); color:var(--muted); margin-top:5px; }
-  .step.actor { border-left:3px solid var(--accent); }
-  .step.check { border-left:3px solid var(--yellow); }
-  .step.money { border-left:3px solid var(--aqua); }
-  .step.danger { border-left:3px solid var(--crit); }
+  .step .m { font:400 10.5px/1.5 var(--sans); color:var(--muted); margin-top:5px; font-variant-numeric:tabular-nums; }
   .branch { display:flex; gap:12px; margin-top:12px; min-width:720px; }
-  .branch .b { flex:1; border:1px dashed var(--axis); border-radius:3px; padding:9px 12px; font-size:11.5px; color:var(--ink-2); }
-  .branch .b b { display:block; font:600 10.5px/1.6 var(--mono); letter-spacing:.06em; text-transform:uppercase; }
-  .branch .ok b { color:var(--good); } .branch .sus b { color:var(--warn); } .branch .rej b { color:var(--crit); }
+  .branch .b { flex:1; border:1px dashed var(--axis); padding:9px 12px; font-size:11.5px; color:var(--ink-2); }
+  .branch .b b { display:block; font-size:11.5px; font-weight:650; color:var(--ink); margin-bottom:2px; }
   /* ---- system map ---- */
   .sys { display:grid; grid-template-columns:170px 1fr 190px; gap:12px; min-width:820px; }
   .lane { display:flex; flex-direction:column; gap:10px; }
-  .box { background:var(--raised); border:1px solid var(--axis); border-radius:3px; padding:9px 12px; }
+  .box { background:var(--surface); border:1px solid var(--axis); padding:9px 12px; }
   .box .t { font:600 12px/1.3 var(--sans); }
-  .box .d { font:400 10.5px/1.5 var(--sans); color:var(--ink-2); margin-top:3px; }
-  .box .m { font:400 9.5px/1.5 var(--mono); color:var(--muted); margin-top:4px; word-break:break-all; }
-  .box.core { border-color:var(--accent); }
-  .box.gov { border-left:3px solid var(--violet); }
-  .lanelbl { font:600 9.5px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:-2px; }
-  .down { text-align:center; color:var(--muted); font:600 14px var(--mono); margin:-2px 0; }
+  .box .d { font:400 11px/1.5 var(--sans); color:var(--ink-2); margin-top:3px; }
+  .box .m { font:400 10px/1.5 var(--mono); color:var(--muted); margin-top:4px; word-break:break-all; }
+  .box.core { border-left:2px solid var(--accent); }
+  .lanelbl { font-size:11.5px; font-weight:650; color:var(--ink-2); margin-bottom:-2px; }
+  .down { text-align:center; color:var(--muted); font:600 13px var(--sans); margin:-2px 0; }
   /* ---- tables ---- */
-  table { border-collapse:collapse; width:100%; font-size:12.5px; margin-top:8px; }
-  th { text-align:left; color:var(--muted); font:500 10px/1.5 var(--mono); text-transform:uppercase; letter-spacing:.09em; padding:6px 10px; border-bottom:1px solid var(--axis); white-space:nowrap; }
-  td { padding:6px 10px; border-bottom:1px solid var(--grid); vertical-align:top; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:8px; }
+  th { text-align:left; color:var(--ink-2); font-size:11.5px; font-weight:650; padding:7px 10px 5px; border-bottom:1px solid var(--rule); white-space:nowrap; }
+  td { padding:6px 10px; border-bottom:1px solid var(--hairline); vertical-align:top; }
   td.mono { font-family:var(--mono); font-size:10.5px; white-space:nowrap; color:var(--ink-2); }
-  td.thr { font-family:var(--mono); font-size:11.5px; font-weight:600; white-space:nowrap; }
+  td.thr { font-size:12px; font-weight:650; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .pw { font-size:12px; } .pw b { color:var(--ink); }
   .cond { color:var(--ink-2); font-size:11.5px; }
-  .tag { font:500 10px/1.6 var(--mono); letter-spacing:.04em; border:1px solid var(--ring); border-radius:3px; padding:0 6px; color:var(--ink-2); white-space:nowrap; }
-  .tag.hot { color:#ff8f8f; border-color:rgba(224,82,82,.35); }
-  footer { margin-top:40px; font-size:12px; color:var(--muted); border-top:1px solid var(--grid); padding-top:14px; }
+  .tag { font-family:var(--mono); font-size:10.5px; color:var(--ink-2); white-space:nowrap; background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:0 5px; }
+  .tag.hot { color:var(--crit); }
+  footer { margin-top:48px; font-size:12px; color:var(--muted); border-top:1px solid var(--hairline); padding-top:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Lido Earn · system reference</div>
-  <h1>Architecture map — how the machine actually runs</h1>
-  <p class="sub">Mellow Flexible Vaults ("Core Vaults") powering EarnETH &amp; EarnUSD: every flow, every signer, every condition. Sources: docs.mellow.finance, lidofinance deployment docs, on-chain. Legend: <span style="color:var(--accent)">■</span> actor &nbsp;<span style="color:var(--yellow)">■</span> check/condition &nbsp;<span style="color:var(--aqua)">■</span> value moves &nbsp;<span style="color:var(--crit)">■</span> failure path.</p>
-  <div class="nav"><a href="index.html">&larr; benchmark board</a><a href="flows.html">daily flows</a><a href="positions.html">position atlas</a></div>
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Lido Earn · curation research</div>
+      <h1>Architecture</h1>
+    </div>
+    <div class="mast-right">
+      <nav class="nav"><a href="index.html">Board</a><a href="flows.html">Daily flows</a><a href="positions.html">Position atlas</a><span class="here">Architecture</span></nav>
+    </div>
+  </div>
+  <p class="sub">Mellow Flexible Vaults ("Core Vaults") powering EarnETH &amp; EarnUSD: every flow, every signer, every condition. Sources: docs.mellow.finance, lidofinance deployment docs, on-chain.</p>
 
   <h2><span class="idx">00</span>System map — one screen</h2>
   <div class="card"><div class="sys">
@@ -89,9 +100,9 @@
     </div>
     <div class="lane">
       <div class="lanelbl">Meta-vault (Mellow Core Vault)</div>
-      <div class="box core"><div class="t">Vault = 4 modules</div><div class="d"><b>ShareModule</b> shares/fees/queues/report-handling · <b>VaultModule</b> subvault push/pull · <b>ACLModule</b> roles · BaseModule aux</div><div class="m">EarnETH 0x6a37…49e · EarnUSD 0x014e…452</div></div>
+      <div class="box core"><div class="t">Vault = 4 modules</div><div class="d">ShareModule shares/fees/queues/report-handling · VaultModule subvault push/pull · ACLModule roles · BaseModule aux</div><div class="m">EarnETH 0x6a37…49e · EarnUSD 0x014e…452</div></div>
       <div class="down">↓ capital, ↑ NAV</div>
-      <div class="box core"><div class="t">Subvaults (isolated)</div><div class="d">EarnETH: stRATEGY (99.9%) + GGV (legacy). EarnUSD: earnUSDc + earnUSDe.<br><b>CallModule</b> executes arbitrary calls — but only through the <b>Verifier</b>.</div></div>
+      <div class="box core"><div class="t">Subvaults (isolated)</div><div class="d">EarnETH: stRATEGY (99.9%) + GGV (legacy). EarnUSD: earnUSDc + earnUSDe.<br>CallModule executes arbitrary calls — but only through the Verifier.</div></div>
       <div class="down">↓ verified calls only</div>
       <div class="box"><div class="t">External protocols</div><div class="d">Aave (mainnet/Plasma/Mantle) · Spark · Morpho · Ethena · Maple · Lido core</div></div>
     </div>
@@ -109,11 +120,11 @@
   <div class="card">
     <div class="flow">
       <div class="step actor"><div class="t">User deposits</div><div class="d">into per-asset DepositQueue (or migrates GG/strETH/DVstETH)</div><div class="m">no fee · request registered</div></div>
-      <div class="step check"><div class="t">Wait for eligible report</div><div class="d">request must be older than <b>depositInterval</b> when a report lands</div><div class="m">~24h typical</div></div>
+      <div class="step check"><div class="t">Wait for eligible report</div><div class="d">request must be older than depositInterval when a report lands</div><div class="m">~24h typical</div></div>
       <div class="step money"><div class="t">Shares minted</div><div class="d">at the reported price (deposit fee = 0)</div><div class="m">shares = assets × 1e18 / priceD18</div></div>
       <div class="step"><div class="t">Claim / auto</div><div class="d">earnETH/earnUSD in wallet; yield accrues via price</div></div>
     </div>
-    <p class="note" style="margin-top:12px">Why the delay exists: deposits price at the <b>next attested NAV</b>, killing same-block NAV-sniping. The instant "Sync" path prices against an EIP-712-signed quote from the Consensus signer set instead.</p>
+    <p class="note" style="margin-top:12px">Why the delay exists: deposits price at the next attested NAV, killing same-block NAV-sniping. The instant "Sync" path prices against an EIP-712-signed quote from the Consensus signer set instead.</p>
   </div>
 
   <h2><span class="idx">02</span>Curator allocation — how a rebalance actually executes</h2>
@@ -124,7 +135,7 @@
       <div class="step check"><div class="t">RiskManager gate</div><div class="d">subvault limit + asset allowlist + vault limit</div><div class="m">share-denominated caps</div></div>
       <div class="step money"><div class="t">CallModule executes</div><div class="d">subvault holds the position; NAV picked up by next oracle report</div></div>
     </div>
-    <p class="note" style="margin-top:12px"><b>Where curation limits become code:</b> onboarding a protocol = adding verifier entries (SET_MERKLE_ROOT_ROLE / ALLOW_CALL_ROLE — admin multisigs, behind timelock). The curator cannot touch anything outside the allowlist; the allowlist-setter is therefore the supreme power in the system. BitmaskVerifier can pin exact calldata bytes (amounts included) — unlike Veda's merkle leaves (address args only), amounts CAN be constrained natively here if configured.</p>
+    <p class="note" style="margin-top:12px">Where curation limits become code: onboarding a protocol = adding verifier entries (SET_MERKLE_ROOT_ROLE / ALLOW_CALL_ROLE — admin multisigs, behind timelock). The curator cannot touch anything outside the allowlist; the allowlist-setter is therefore the supreme power in the system. BitmaskVerifier can pin exact calldata bytes (amounts included) — unlike Veda's merkle leaves (address args only), amounts CAN be constrained natively here if configured.</p>
   </div>
 
   <h2><span class="idx">03</span>Oracle report — the NAV heartbeat</h2>
@@ -135,22 +146,22 @@
       <div class="step money"><div class="t">handleReport()</div><div class="d">queues settle at new price · protocol fee accrues · perf fee vs high-watermark</div></div>
     </div>
     <div class="branch">
-      <div class="b ok"><b>within normal band</b>report takes effect immediately — deposits/redemptions price against it</div>
-      <div class="b sus"><b>suspicious band</b>report is HELD — a separate <span class="tag">ACCEPT_REPORT_ROLE</span> (OracleAccepter) must explicitly acceptReport(). The circuit breaker for depeg/exploit days. Note: after a suspicious report the timeout check is bypassed for the correction.</div>
-      <div class="b rej"><b>&gt; max deviation</b>revert InvalidPrice — the report cannot enter at all</div>
+      <div class="b ok">within normal bandreport takes effect immediately — deposits/redemptions price against it</div>
+      <div class="b sus">suspicious bandreport is HELD — a separate <span class="tag">ACCEPT_REPORT_ROLE</span> (OracleAccepter) must explicitly acceptReport(). The circuit breaker for depeg/exploit days. Note: after a suspicious report the timeout check is bypassed for the correction.</div>
+      <div class="b rej">&gt; max deviationrevert InvalidPrice — the report cannot enter at all</div>
     </div>
-    <p class="note" style="margin-top:12px"><b>The trust model in one line:</b> the share price is an attested NAV with deviation guards — not an on-chain computation. Compromise of updater alone is bounded by (band × frequency); updater + accepter together is the real tail, which is why they are distinct signer sets.</p>
+    <p class="note" style="margin-top:12px">The trust model in one line: the share price is an attested NAV with deviation guards — not an on-chain computation. Compromise of updater alone is bounded by (band × frequency); updater + accepter together is the real tail, which is why they are distinct signer sets.</p>
   </div>
 
   <h2><span class="idx">04</span>Redemption lifecycle — why 72h, and what must go right</h2>
   <div class="card">
     <div class="flow">
-      <div class="step actor"><div class="t">User requests</div><div class="d">shares <b>move to the queue at request</b> (burned at batch settlement &mdash; on-chain burns are settlement-day events); request logged in Fenwick-tree batch structure</div><div class="m">non-cancellable · anti yield-griefing</div></div>
-      <div class="step check"><div class="t">Batch prices</div><div class="d">next report older than <b>redeemInterval</b> fixes the batch's price</div></div>
+      <div class="step actor"><div class="t">User requests</div><div class="d">shares move to the queue at request (burned at batch settlement &mdash; on-chain burns are settlement-day events); request logged in Fenwick-tree batch structure</div><div class="m">non-cancellable · anti yield-griefing</div></div>
+      <div class="step check"><div class="t">Batch prices</div><div class="d">next report older than redeemInterval fixes the batch's price</div></div>
       <div class="step danger"><div class="t">Curator sources liquidity</div><div class="d">pulls from subvaults, unwinds positions if the idle buffer is short</div><div class="m">the liveness dependency</div></div>
       <div class="step money"><div class="t">handleBatches → claim</div><div class="d">assets move to queue; user claims wstETH (ETH vault) / USDC (USD vault)</div><div class="m">up to ~72h</div></div>
     </div>
-    <p class="note" style="margin-top:12px"><b>The honest read:</b> 72h = report cadence + redeemInterval + unwind time. Redemption liveness depends on the curator being able to exit positions — which is why "stress-exit quality" scoring (Kelp review, point 6) is not a nicety. EarnETH holds 7.3% idle against this promise; EarnUSD holds 0.1%.</p>
+    <p class="note" style="margin-top:12px">The honest read: 72h = report cadence + redeemInterval + unwind time. Redemption liveness depends on the curator being able to exit positions — which is why "stress-exit quality" scoring (Kelp review, point 6) is not a nicety. EarnETH holds 7.3% idle against this promise; EarnUSD holds 0.1%.</p>
   </div>
 
   <h2><span class="idx">05</span>Fee flow</h2>
@@ -166,7 +177,7 @@
   <div class="card">
     <table>
       <tr><th>Role</th><th>Threshold</th><th>Address</th><th>Powers</th><th>Conditions / limits</th></tr>
-      <tr><td>Proxy Admin</td><td class="thr">5/8</td><td class="mono">0x81698f87…0Af0</td><td class="pw"><b>Upgrade implementations</b> — the nuclear power</td><td class="cond">Behind timelock; slow by design</td></tr>
+      <tr><td>Proxy Admin</td><td class="thr">5/8</td><td class="mono">0x81698f87…0Af0</td><td class="pw">Upgrade implementations — the nuclear power</td><td class="cond">Behind timelock; slow by design</td></tr>
       <tr><td>Lazy Vault Admin</td><td class="thr">5/8</td><td class="mono">0x0Dd73341…076E</td><td class="pw">Non-urgent config: queues, limits, role grants, verifier entries</td><td class="cond">Timelocked; high quorum</td></tr>
       <tr><td>Active Vault Admin</td><td class="thr">3/8</td><td class="mono">0x982aB697…ef10</td><td class="pw">Time-sensitive ops</td><td class="cond">Lower quorum for speed; narrower scope</td></tr>
       <tr><td>Curator (meta-vaults)</td><td class="thr">3/5</td><td class="mono">0xe5abcc40…769d</td><td class="pw">Rebalance calls; fulfil redemption batches</td><td class="cond">Only verifier-allowlisted calls, inside RiskManager caps</td></tr>
@@ -174,12 +185,12 @@
       <tr><td>Oracle updater</td><td class="thr">3/8</td><td class="mono">0x93a79764…35D1</td><td class="pw">submitReports (share price)</td><td class="cond">On-chain (2026-07-18): max ±0.5% move per report; &gt;0.1% auto-flagged suspicious; timeout 20h; depositInterval 1h; redeemInterval 24h (ETH) / 48h (USD)</td></tr>
       <tr><td>Oracle accepter</td><td class="thr">5/8</td><td class="mono">0x0Dd73341…076E (admin Safe)</td><td class="pw">Accept suspicious-band reports (&gt;0.1% moves)</td><td class="cond">Two-layer pipeline: 3/8 submitter Safe → OracleSubmitter wrapper → 5/8 accepter. Distinct keys = two-party control of large NAV moves</td></tr>
       <tr><td>LidoPauser</td><td class="thr">3/5</td><td class="mono">0xA916fD52…A0Cd</td><td class="pw">Pause queues / operations</td><td class="cond">Emergency brake, Lido side</td></tr>
-      <tr><td>MellowPauser</td><td class="thr">Safe</td><td class="mono">0x6E887aF3…E638</td><td class="pw">Timelock <b>executor</b> (with LidoPauser) — routes emergency actions through the timelock</td><td class="cond">CORRECTED vs docs-derived reading: pausers are executors, not direct pause keys; with minDelay=0 a signed action executes immediately — fast, but not unilateral</td></tr>
+      <tr><td>MellowPauser</td><td class="thr">Safe</td><td class="mono">0x6E887aF3…E638</td><td class="pw">Timelock executor (with LidoPauser) — routes emergency actions through the timelock</td><td class="cond">CORRECTED vs docs-derived reading: pausers are executors, not direct pause keys; with minDelay=0 a signed action executes immediately — fast, but not unilateral</td></tr>
       <tr><td>Current Meta Treasury</td><td class="thr">4/7</td><td class="mono">0xcCf2daba…9B85</td><td class="pw">Fee collection &amp; distribution</td><td class="cond">Split ratios per private agreements</td></tr>
       <tr><td>Timelocks</td><td class="thr">n/a</td><td class="mono">ETH 0x363Ba884…2189 · USD 0xdA6Da82D…8845</td><td class="pw">Propose/execute separation on privileged config</td><td class="cond"><span class="tag hot">getMinDelay() = 0</span> — verified on-chain 2026-07-18: NO actual delay; scheduled actions can execute next block</td></tr>
-      <tr><td>DAO first-loss</td><td class="thr">policy</td><td class="mono">$5M ($3M wstETH + $2M USDC)</td><td class="pw">Absorbs losses first via DAO share burn</td><td class="cond"><b>Trigger: ≥1% vault MTM loss</b> → deposits pause + burn up to 100% of DAO position</td></tr>
+      <tr><td>DAO first-loss</td><td class="thr">policy</td><td class="mono">$5M ($3M wstETH + $2M USDC)</td><td class="pw">Absorbs losses first via DAO share burn</td><td class="cond">Trigger: ≥1% vault MTM loss → deposits pause + burn up to 100% of DAO position</td></tr>
     </table>
-    <p class="note" style="margin-top:12px"><b>Attack-surface summary (updated with live on-chain reads, 2026-07-18):</b> (1) allowlist-setters &gt; curators — and with <b>timelock delay = 0</b>, root/config changes can land next-block: the multisig thresholds ARE the whole defense, there is no reaction window; (2) <b>RiskManager caps are set to 2^254 (effectively off)</b> — real exposure control is verifier roots + asset allowlists only; (3) <b>FeeManager is plain Ownable by the 5/8 admin Safe, not timelocked</b> — fees changeable in one tx; (4) oracle collusion tail bounded by ±0.5%/report bands & 20h timeout; (5) both pauser Safes are timelock executors with minDelay=0 — reaction is one multisig signature away, fast but never single-signer; (6) redemption liveness is a curator obligation, not a contract guarantee.</p>
+    <p class="note" style="margin-top:12px">Attack-surface summary (updated with live on-chain reads, 2026-07-18): (1) allowlist-setters &gt; curators — and with timelock delay = 0, root/config changes can land next-block: the multisig thresholds ARE the whole defense, there is no reaction window; (2) RiskManager caps are set to 2^254 (effectively off) — real exposure control is verifier roots + asset allowlists only; (3) FeeManager is plain Ownable by the 5/8 admin Safe, not timelocked — fees changeable in one tx; (4) oracle collusion tail bounded by ±0.5%/report bands & 20h timeout; (5) both pauser Safes are timelock executors with minDelay=0 — reaction is one multisig signature away, fast but never single-signer; (6) redemption liveness is a curator obligation, not a contract guarantee.</p>
   </div>
 
   <footer>Companion to the <a href="index.html" style="color:var(--accent);text-decoration:none">live benchmark board</a> · sources: docs.mellow.finance/core-vaults/architecture · github.com/lidofinance/docs (earn/deployment-contracts) · docs.lido.fi/earn · verified 2026-07-17/18 · not investment advice.</footer>

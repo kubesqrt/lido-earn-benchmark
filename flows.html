@@ -5,98 +5,103 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Lido Earn — Daily Deposit &amp; Withdrawal Flows</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
     color-scheme: dark;
-    --page:#0b0d11; --surface:#111419; --raised:#161a21;
-    --ink:#e8ebf0; --ink-2:#a6afbc; --muted:#687180;
-    --grid:#1f2530; --axis:#2b323e; --ring:rgba(255,255,255,0.07);
-    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --red:#e66767;
-    --crit:#e05252; --warn:#fab219; --good:#2fb54d;
-    --in:#3987e5; --out:#c98a5e; --block:#e0685f;
-    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+    --paper:#101214; --surface:#16181c;
+    --ink:#e2e4e8; --ink-2:#9aa0a8; --muted:#6b7178;
+    --hairline:rgba(255,255,255,.08); --rule:rgba(255,255,255,.14);
+    --grid:rgba(255,255,255,.06); --axis:rgba(255,255,255,.16);
+    --accent:#6d9dc9; --good:#4ea87c; --crit:#d4766c; --warn:#b3925e;
+    --aqua:#5fa08f; --yellow:#b3925e; --violet:#9186ab; --red:#bd7d70;
+    --in:#6d9dc9; --out:#b3925e; --block:#bd6a5e;
+    --sans:"Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
   }
   * { box-sizing:border-box; }
-  html,body { background:var(--page); }
-  body { color:var(--ink); margin:0; min-height:100vh; font:400 14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
-  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 70px; }
-  .eyebrow { font:500 10.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-  h1 { font-size:24px; margin:8px 0 4px; letter-spacing:-.01em; font-weight:600; text-wrap:balance; }
-  .sub { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:84ch; }
-  .sub b { color:var(--ink); font-weight:500; }
-  h2 { font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
-       margin:40px 0 6px; display:flex; align-items:center; gap:12px; }
-  h2::after { content:""; flex:1; height:1px; background:var(--grid); }
-  .masthead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; }
-  .mast-right { font:500 11px/1 var(--mono); color:var(--ink-2); display:inline-flex; align-items:center; gap:14px; padding-bottom:6px; white-space:nowrap; }
-  .mast-right a { color:var(--accent); text-decoration:none; }
-  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 6px rgba(47,181,77,.7); }
-  .status { display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 6px; font:400 10.5px/1.6 var(--mono); }
-  .status span { border:1px solid var(--ring); border-radius:3px; padding:2px 9px; color:var(--ink-2); background:var(--surface); }
-  .status span.ok::before { content:"\25CF "; color:var(--good); }
-  .status span.wait::before { content:"\25CF "; color:var(--muted); }
-  .status span.err::before { content:"\25CF "; color:var(--crit); }
-  .controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:8px 0 4px; }
-  .seg { display:inline-flex; border:1px solid var(--ring); border-radius:3px; overflow:hidden; background:var(--surface); }
-  .seg button { background:none; border:0; border-left:1px solid var(--ring); color:var(--ink-2); cursor:pointer;
-                font:500 11.5px/1 var(--mono); padding:7px 13px; }
+  html,body { background:var(--paper); }
+  body { color:var(--ink); margin:0; min-height:100vh; font:400 14px/1.55 var(--sans);
+         -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  .wrap { max-width:1180px; margin:0 auto; padding:30px 24px 70px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  b, strong { font-weight:400; color:var(--ink); }
+  .eyebrow { font-size:12px; color:var(--muted); }
+  h1 { font-size:25px; margin:4px 0 2px; letter-spacing:-.01em; font-weight:650; text-wrap:balance; }
+  .sub { color:var(--ink-2); font-size:13px; margin:10px 0 6px; max-width:90ch; }
+  .sub b { color:var(--ink); font-weight:400; }
+  h2 { font-size:17px; font-weight:650; letter-spacing:-.005em; color:var(--ink);
+       margin:46px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--hairline); }
+  .masthead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+              border-bottom:1px solid var(--rule); padding-bottom:14px; }
+  .mast-right { text-align:right; white-space:nowrap; }
+  .mast-right b { font-weight:400; color:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums; }
+  .nav { font-size:13px; color:var(--muted); }
+  .nav a, .nav .here { margin-left:18px; }
+  .nav .here { color:var(--ink); font-weight:600; }
+  .asof { font-size:12px; color:var(--muted); margin-top:8px; }
+  .status { display:flex; flex-wrap:wrap; margin:10px 0 6px; font-size:11.5px;
+            color:var(--muted); font-variant-numeric:tabular-nums; }
+  .status span { color:var(--muted); }
+  .status span + span::before { content:"\00B7"; margin:0 8px; }
+  .status span.err { color:var(--crit); }
+  .controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:12px 0 4px; }
+  .seg { display:inline-flex; border:1px solid var(--rule); border-radius:2px; overflow:hidden; background:var(--surface); }
+  .seg button { background:none; border:0; border-left:1px solid var(--hairline); color:var(--ink-2); cursor:pointer;
+                font:500 12px/1 var(--sans); padding:7px 13px; font-variant-numeric:tabular-nums; }
   .seg button:first-child { border-left:0; }
-  .seg button:hover:not(.on) { background:rgba(255,255,255,0.045); color:var(--ink); }
-  .seg button.on { background:rgba(57,135,229,0.20); color:var(--ink); }
-  .ctl-lbl { font:600 10.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
-  .card { background:var(--surface); border:1px solid var(--ring); border-radius:2px; padding:16px 18px; margin:10px 0 0; }
-  .cardhead { font-size:14.5px; font-weight:600; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
-  .cardhead small { color:var(--muted); font-weight:400; font-size:11px; font-family:var(--mono); }
-  .cardhead .tvl { margin-left:auto; font:500 12px/1 var(--mono); color:var(--ink-2); }
-  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:14px 0 2px; }
-  .tile { background:var(--raised); border:1px solid var(--ring); border-radius:2px; border-top:2px solid var(--axis); padding:11px 13px; }
-  .tile.usual { border-top-color:var(--out); }
-  .tile.net { border-top-color:var(--good); }
-  .tile.block { border-top-color:var(--block); }
-  .tile .k { font:500 9.5px/1.4 var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
-  .tile .v { font:600 21px/1.15 var(--mono); margin:5px 0 0; letter-spacing:-.02em; }
-  .tile .v.out { color:#e4b48c; } .tile .v.blk { color:#ff9a92; } .tile .v.pos { color:var(--good); } .tile .v.neg { color:#ff9a92; } .tile .v.inn { color:#7fb2ee; }
-  .tile .d { font-size:11.5px; color:var(--ink-2); margin-top:4px; line-height:1.4; }
-  .tile .d b { color:var(--ink); font-weight:500; font-family:var(--mono); font-size:11px; }
+  .seg button:hover:not(.on) { background:rgba(255,255,255,.04); color:var(--ink); }
+  .seg button.on { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .ctl-lbl { font-size:12px; color:var(--ink-2); font-weight:600; }
+  .card { margin:18px 0 0; border-top:1px solid var(--rule); padding-top:14px; }
+  .cardhead { font-size:15px; font-weight:650; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .cardhead small { color:var(--muted); font-weight:400; font-size:11.5px; }
+  .cardhead .tvl { margin-left:auto; font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:0 32px; margin:14px 0 2px; }
+  .tile { padding:9px 0 11px; border-top:1px solid var(--hairline); }
+  .tile .k { font-size:11.5px; color:var(--ink-2); }
+  .tile .v { font-size:21px; line-height:1.2; font-weight:600; margin-top:4px; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .tile .v.out { color:#c4a878; } .tile .v.blk { color:#d4877b; } .tile .v.pos { color:var(--good); } .tile .v.neg { color:var(--crit); } .tile .v.inn { color:#8fb3d4; }
+  .tile .d { font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.4; }
+  .tile .d b { color:var(--ink-2); font-weight:400; font-variant-numeric:tabular-nums; }
   .scroll { overflow-x:auto; }
-  svg text { font-family:var(--mono); }
+  svg text { font-family:var(--sans); font-variant-numeric:tabular-nums; }
   .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:12px; color:var(--ink-2); margin:14px 0 2px; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
-  .legend i { width:13px; height:11px; border-radius:2px; display:inline-block; }
-  table { border-collapse:collapse; width:100%; font-size:12.5px; margin-top:14px; }
-  th { text-align:left; color:var(--muted); font:500 10px/1.5 var(--mono); text-transform:uppercase;
-       letter-spacing:.09em; padding:6px 10px; border-bottom:1px solid var(--axis); white-space:nowrap; position:sticky; top:0; background:var(--surface); }
-  td { padding:5px 10px; border-bottom:1px solid var(--grid); white-space:nowrap; }
-  td.num, th.num { text-align:right; font-family:var(--mono); font-size:11.5px; }
-  tr:hover td { background:rgba(255,255,255,0.02); }
-  td.out { color:#e4b48c; } td.in { color:#7fb2ee; } td.pos { color:var(--good); } td.neg { color:#ff9a92; } td.blk { color:#ff9a92; }
-  .tblwrap { max-height:300px; overflow:auto; margin-top:10px; border:1px solid var(--grid); border-radius:2px; }
+  .legend i { width:12px; height:10px; display:inline-block; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:14px; }
+  th { text-align:left; color:var(--ink-2); font-size:11.5px; font-weight:650;
+       padding:7px 10px 5px; border-bottom:1px solid var(--rule); white-space:nowrap; position:sticky; top:0; background:var(--paper); }
+  td { padding:5px 10px; border-bottom:1px solid var(--hairline); white-space:nowrap; }
+  td.num, th.num { text-align:right; }
+  td.num { font-variant-numeric:tabular-nums; font-size:12.5px; }
+  tr:hover td { background:rgba(255,255,255,.03); }
+  td.out { color:#c4a878; } td.in { color:#8fb3d4; } td.pos { color:var(--good); } td.neg { color:var(--crit); } td.blk { color:#d4877b; }
+  .tblwrap { max-height:300px; overflow:auto; margin-top:12px; border:1px solid var(--hairline); }
   .tblwrap table { margin-top:0; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:26px; }
   .grid2 > * { min-width:0; }
   @media (max-width:880px){ .grid2 { grid-template-columns:1fr; } }
-  .subhead { font:600 10px/1.5 var(--mono); letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin:16px 0 0; }
-  .flownote { font-size:12.5px; color:var(--ink-2); margin:12px 0 0; max-width:84ch; }
-  .flownote b { color:var(--ink); }
-  .focus { border-left:2px solid var(--block); background:rgba(224,104,95,0.06); padding:11px 15px; margin:14px 0 0; border-radius:0 2px 2px 0; font-size:13px; color:var(--ink-2); }
-  .focus b { color:var(--ink); }
-  .focus code { background:rgba(255,255,255,0.06); border-radius:4px; padding:1px 6px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
-  .tt { position:fixed; pointer-events:none; background:var(--raised); border:1px solid var(--ring); border-radius:3px;
-        padding:8px 11px; font-size:12px; box-shadow:0 6px 22px rgba(0,0,0,.5); opacity:0; transition:opacity .08s; z-index:50; color:var(--ink); }
-  .tt b { display:block; font-family:var(--mono); font-size:11.5px; font-weight:600; margin-bottom:3px; }
-  .tt .r { display:flex; justify-content:space-between; gap:16px; font-family:var(--mono); font-size:11px; }
-  .meth { font-size:12.5px; color:var(--ink-2); max-width:86ch; }
-  .meth code { background:rgba(255,255,255,0.06); border-radius:4px; padding:1px 6px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
-  .meth b { color:var(--ink); }
+  .subhead { font-size:12.5px; font-weight:650; color:var(--ink); margin:18px 0 0; }
+  .flownote { font-size:12.5px; color:var(--ink-2); margin:12px 0 0; max-width:90ch; }
+  .flownote b { color:var(--ink); font-weight:400; }
+  .focus { border-left:2px solid var(--accent); padding:10px 15px; margin:14px 0 0; font-size:13px; color:var(--ink-2); }
+  .focus b { color:var(--ink); font-weight:400; }
+  .focus code { background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:0 5px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
+  .tt { position:fixed; pointer-events:none; background:var(--surface); border:1px solid var(--rule);
+        padding:8px 11px; font-size:12px; box-shadow:0 4px 14px rgba(0,0,0,.35); opacity:0; transition:opacity .08s; z-index:50; color:var(--ink); }
+  .tt b { display:block; font-size:12px; font-weight:400; margin-bottom:3px; font-variant-numeric:tabular-nums; }
+  .tt .r { display:flex; justify-content:space-between; gap:16px; font-size:11.5px; font-variant-numeric:tabular-nums; }
+  .meth { font-size:12.5px; color:var(--ink-2); max-width:90ch; }
+  .meth code { background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:0 5px; font-size:11.5px; color:var(--ink); font-family:var(--mono); }
+  .meth b { color:var(--ink); font-weight:400; }
   .skel { color:var(--muted); font-size:13px; padding:16px 0; }
   @keyframes pulse { 0%,100% { opacity:.45; } 50% { opacity:1; } }
   .skel { animation:pulse 1.4s ease-in-out infinite; }
-  footer { margin-top:40px; font-size:12px; color:var(--muted); border-top:1px solid var(--grid); padding-top:14px; }
-  footer a { color:var(--accent); text-decoration:none; }
+  footer { margin-top:48px; font-size:12px; color:var(--muted); border-top:1px solid var(--hairline); padding-top:12px; }
+  .snapbanner { background:var(--surface); border:1px solid var(--hairline); padding:9px 14px; margin:14px 0 4px; font-size:12.5px; color:var(--ink-2); }
+  .snapbanner b { color:var(--ink); }
   @media (prefers-reduced-motion:reduce){ .skel{ animation:none; } }
 </style>
 </head>
@@ -104,17 +109,15 @@
 <div class="wrap">
   <div class="masthead">
     <div>
-      <div class="eyebrow">Curation benchmark board</div>
-      <h1>Daily deposit &amp; withdrawal flows</h1>
+      <div class="eyebrow">Lido Earn &middot; curation research</div>
+      <h1>Daily flows</h1>
     </div>
     <div class="mast-right">
-      <a href="index.html">&larr; board</a>
-      <a href="positions.html">position atlas</a>
-      <a href="architecture.html">architecture</a>
-      <span class="live-dot"></span><b id="asof">loading&hellip;</b>
+      <nav class="nav"><a href="index.html">Board</a><span class="here">Daily flows</span><a href="positions.html">Position atlas</a><a href="architecture.html">Architecture</a></nav>
+      <div class="asof"><b id="asof">loading&hellip;</b></div>
     </div>
   </div>
-  <p class="sub">Settled deposits and redemptions for <b>EarnETH</b> and <b>EarnUSD</b>, read from share-token mint/burn events and bucketed by day. Deposits settle near-continuously; redemptions settle in batches at oracle reports &mdash; so outflow days are settlement days.</p>
+  <p class="sub">Settled deposits and redemptions for EarnETH and EarnUSD, read from share-token mint/burn events and bucketed by day. Deposits settle near-continuously; redemptions settle in batches at oracle reports.</p>
 
   <div class="controls">
     <span class="ctl-lbl">Window</span>
@@ -128,7 +131,7 @@
       <button data-d="usd" class="on">USD</button>
       <button data-d="native">native (ETH / USDC)</button>
     </div>
-    <span id="winNote" style="font:400 11.5px/1 var(--mono); color:var(--muted)"></span>
+    <span id="winNote" style="font:400 11.5px/1 var(--sans); color:var(--muted)"></span>
   </div>
 
   <div class="status" id="status"></div>
@@ -139,11 +142,11 @@
 
   <h2>Method</h2>
   <p class="meth">
-    Mint from <code>0x0</code> = settled deposit (fee mints to the treasury excluded). Burn to <code>0x0</code> = the redeem queue settling &mdash; settlements are batch transactions executed by vault operations, so they say nothing about <i>who</i> redeemed. Requester-level flow comes from share transfers <b>into</b> the queue; depositor-level from mint forwarding. Shares are valued at the current share price. Logs pulled client-side in &le;9,900-block chunks from public RPCs; a coverage figure appears if any range failed. Numbers exclude requests still pending in the queue.
+    Mint from <code>0x0</code> = settled deposit (fee mints to the treasury excluded). Burn to <code>0x0</code> = the redeem queue settling &mdash; settlements are batch transactions executed by vault operations, so they say nothing about who redeemed. Requester-level flow comes from share transfers into the queue; depositor-level from mint forwarding. Shares are valued at the current share price. Logs pulled client-side in &le;9,900-block chunks from public RPCs; a coverage figure appears if any range failed. Numbers exclude requests still pending in the queue.
   </p>
 
   <footer>
-    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">rates board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>. <span style="opacity:.5">build v3</span>
+    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>.
   </footer>
 </div>
 <div class="tt" id="tt"></div>
@@ -327,7 +330,7 @@ function renderVault(key, cfg, data, price, tvl) {
     `<tr><td style="font-family:var(--mono);font-size:11px">${shortA(a)}${data.kinds && data.kinds[a] ? ` <span style="color:var(--muted)">· ${data.kinds[a]}</span>` : ""}</td>` +
     `<td class="num">${money(toV(v), unit)}</td><td class="num">${tot>0?(v/tot*100).toFixed(0):0}%</td></tr>`).join("");
   const conc =
-    `<div class="subhead">Who moves the money — top addresses, ${WIN}d</div>` +
+    `<div class="subhead">Top requesters and depositors, ${WIN}d</div>` +
     `<div class="grid2"><div><table><thead><tr><th>Redeem requester</th><th class="num">Requested</th><th class="num">Share</th></tr></thead><tbody>${mkRows(data.reqBy, reqTotal) || `<tr><td colspan="3" style="color:var(--muted)">no requests in window</td></tr>`}</tbody></table></div>` +
     `<div><table><thead><tr><th>Depositor</th><th class="num">Deposited</th><th class="num">Share</th></tr></thead><tbody>${mkRows(data.depBy, depTotal)}</tbody></table></div></div>`;
 
@@ -368,9 +371,9 @@ function wireChart(key, cfg, series, price) {
     h.addEventListener("mousemove", e => {
       const d = series[+h.dataset.i]; const net = toV(d.dep) - toV(d.routine) - toV(d.big);
       $("tt").innerHTML = `<b>${d.full}</b>` +
-        `<div class="r"><span style="color:#7fb2ee">deposits</span><span>${d.dep>1e-9?money(toV(d.dep),unit):"—"}</span></div>` +
-        `<div class="r"><span style="color:#e4b48c">routine out</span><span>${d.routine>1e-9?money(toV(d.routine),unit):"—"}</span></div>` +
-        (d.big>1e-9?`<div class="r"><span style="color:#ff9a92">large out</span><span>${money(toV(d.big),unit)}</span></div>`:"") +
+        `<div class="r"><span style="color:#8fb3d4">deposits</span><span>${d.dep>1e-9?money(toV(d.dep),unit):"—"}</span></div>` +
+        `<div class="r"><span style="color:#c4a878">routine out</span><span>${d.routine>1e-9?money(toV(d.routine),unit):"—"}</span></div>` +
+        (d.big>1e-9?`<div class="r"><span style="color:#d4877b">large out</span><span>${money(toV(d.big),unit)}</span></div>`:"") +
         `<div class="r"><span>net</span><span>${Math.abs(net)<1e-9?"—":(net>=0?'+':'−')+money(Math.abs(net),unit)}</span></div>`;
       const tt = $("tt"); tt.style.opacity = 1;
       let x = e.clientX + 14, y = e.clientY + 14; const r = tt.getBoundingClientRect();

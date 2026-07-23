@@ -5,74 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Lido Earn — Position Atlas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
     color-scheme: dark;
-    --page:#0b0d11; --surface:#111419; --raised:#161a21; --ink:#e8ebf0; --ink-2:#a6afbc; --muted:#687180;
-    --grid:#1f2530; --axis:#2b323e; --ring:rgba(255,255,255,0.07);
-    --accent:#3987e5; --aqua:#199e70; --yellow:#c98500; --violet:#9085e9; --red:#e66767; --good:#2fb54d; --crit:#e05252; --warn:#fab219;
-    --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+    --paper:#101214; --surface:#16181c;
+    --ink:#e2e4e8; --ink-2:#9aa0a8; --muted:#6b7178;
+    --hairline:rgba(255,255,255,.08); --rule:rgba(255,255,255,.14);
+    --grid:rgba(255,255,255,.06); --axis:rgba(255,255,255,.16);
+    --accent:#6d9dc9; --good:#4ea87c; --crit:#d4766c; --warn:#b3925e;
+    --aqua:#5fa08f; --yellow:#b3925e; --violet:#9186ab; --red:#bd7d70;
+    --sans:"Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
   }
   * { box-sizing:border-box; }
-  body { background:var(--page); color:var(--ink); margin:0; font:400 14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
-  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 70px; }
-  .eyebrow { font:500 10.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-  h1 { font-size:24px; margin:8px 0 4px; font-weight:600; letter-spacing:-.01em; }
-  .sub { color:var(--ink-2); font-size:13px; margin:0 0 8px; max-width:82ch; }
-  .nav { font:500 11px/1 var(--mono); margin:10px 0 0; }
-  .nav a { color:var(--accent); text-decoration:none; margin-right:14px; } .nav a:hover { text-decoration:underline; }
-  h2 { font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:42px 0 6px; display:flex; align-items:center; gap:12px; }
-  h2::after { content:""; flex:1; height:1px; background:var(--grid); }
-  .idx { color:var(--accent); margin-right:8px; }
-  .note { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:80ch; }
-  .note b { color:var(--ink); }
-  .card { background:var(--surface); border:1px solid var(--ring); border-radius:2px; padding:16px 18px; margin:10px 0 0; overflow-x:auto; }
-  /* position card */
-  .pos { margin:14px 0 0; }
+  body { background:var(--paper); color:var(--ink); margin:0; font:400 14px/1.55 var(--sans);
+         -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  .wrap { max-width:1180px; margin:0 auto; padding:30px 24px 70px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  b, strong { font-weight:400; color:var(--ink); }
+  .eyebrow { font-size:12px; color:var(--muted); }
+  h1 { font-size:25px; margin:4px 0 2px; font-weight:650; letter-spacing:-.01em; }
+  .masthead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+              border-bottom:1px solid var(--rule); padding-bottom:14px; }
+  .mast-right { text-align:right; white-space:nowrap; }
+  .nav { font-size:13px; color:var(--muted); }
+  .nav a, .nav .here { margin-left:18px; }
+  .nav .here { color:var(--ink); font-weight:600; }
+  .sub { color:var(--ink-2); font-size:13px; margin:10px 0 8px; max-width:90ch; }
+  .sub b { color:var(--ink); font-weight:400; }
+  h2 { font-size:17px; font-weight:650; letter-spacing:-.005em; color:var(--ink);
+       margin:46px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--hairline); }
+  .idx { color:var(--muted); font-weight:400; font-size:12px; margin-right:10px; font-variant-numeric:tabular-nums; }
+  .note { color:var(--ink-2); font-size:13px; margin:0 0 12px; max-width:90ch; }
+  .note b { color:var(--ink); font-weight:400; }
+  .card { margin:14px 0 0; overflow-x:auto; }
+  /* position entry */
+  .pos { margin:22px 0 0; border-top:1px solid var(--hairline); padding-top:14px; }
   .poshead { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px; }
-  .poshead .pid { font:600 11px/1 var(--mono); color:var(--accent); }
-  .poshead .pname { font:600 14.5px/1.3 var(--sans); }
-  .poshead .pstats { font:500 11px/1.5 var(--mono); color:var(--ink-2); }
-  .poshead .pstats b { color:var(--ink); }
-  .verdict { font:600 10px/1.6 var(--mono); letter-spacing:.08em; border-radius:3px; padding:1px 8px; margin-left:auto; }
-  .v-hold { color:#7fd794; border:1px solid rgba(47,181,77,.3); }
-  .v-reduce { color:#f2c05c; border:1px solid rgba(250,178,25,.3); }
-  .v-remove { color:#ff8f8f; border:1px solid rgba(224,82,82,.35); }
-  .v-increase { color:#8ec3ff; border:1px solid rgba(57,135,229,.35); }
+  .poshead .pid { font-size:12px; font-weight:650; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .poshead .pname { font-size:15px; font-weight:650; }
+  .poshead .pstats { font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+  .poshead .pstats b { color:var(--ink); font-weight:400; }
+  .verdict { margin-left:auto; font-size:12px; font-weight:650; color:var(--ink); white-space:nowrap; }
   .flow { display:flex; align-items:stretch; margin-top:12px; min-width:700px; }
-  .step { background:var(--raised); border:1px solid var(--axis); border-radius:3px; padding:9px 11px; flex:1; min-width:110px; position:relative; }
+  .step { border:1px solid var(--axis); background:var(--surface); padding:9px 11px; flex:1; min-width:110px; position:relative; }
   .step + .step { margin-left:32px; }
-  .step + .step::before { content:"→"; position:absolute; left:-25px; top:50%; transform:translateY(-50%); color:var(--muted); font:600 14px var(--mono); }
-  .step .t { font:600 11.5px/1.35 var(--sans); }
-  .step .d { font:400 10.5px/1.5 var(--sans); color:var(--ink-2); margin-top:3px; }
-  .step .m { font:400 9.5px/1.5 var(--mono); color:var(--muted); margin-top:4px; }
-  .step.src { border-left:3px solid var(--accent); }
-  .step.act { border-left:3px solid var(--aqua); }
-  .step.yld { border-left:3px solid var(--good); }
-  .step.rsk { border-left:3px solid var(--crit); }
-  .loopback { font:400 10.5px/1.6 var(--mono); color:var(--violet); margin-top:6px; }
-  .riskline { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font-size:11.5px; color:var(--ink-2); }
-  .riskline span::before { content:"▪ "; color:var(--red); }
-  .liq { font:400 11px/1.6 var(--mono); color:var(--yellow); margin-top:8px; }
-  table { border-collapse:collapse; width:100%; font-size:12.5px; margin-top:8px; }
-  th { text-align:left; color:var(--muted); font:500 10px/1.5 var(--mono); text-transform:uppercase; letter-spacing:.09em; padding:6px 10px; border-bottom:1px solid var(--axis); white-space:nowrap; }
-  td { padding:6px 10px; border-bottom:1px solid var(--grid); white-space:nowrap; }
-  td.num { text-align:right; font-family:var(--mono); font-size:11.5px; }
-  td.hot { color:#ff8f8f; }
-  .formula { background:var(--raised); border:1px solid var(--axis); border-radius:3px; padding:12px 16px; font:500 13px/1.9 var(--mono); color:var(--ink); margin:10px 0; overflow-x:auto; }
+  .step + .step::before { content:"\2192"; position:absolute; left:-25px; top:50%; transform:translateY(-50%); color:var(--muted); font:600 14px var(--sans); }
+  .step .t { font:600 12px/1.35 var(--sans); }
+  .step .d { font:400 11px/1.5 var(--sans); color:var(--ink-2); margin-top:3px; }
+  .step .m { font:400 10.5px/1.5 var(--sans); color:var(--muted); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .loopback { font-size:11px; color:var(--muted); margin-top:6px; }
+  .riskline { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:10px; font-size:11.5px; color:var(--ink-2); }
+  .riskline span::before { content:"\2013\00A0"; color:var(--muted); }
+  .liq { font-size:11.5px; line-height:1.6; color:var(--ink-2); margin-top:8px; max-width:100ch; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:8px; }
+  th { text-align:left; color:var(--ink-2); font-size:11.5px; font-weight:650; padding:7px 10px 5px; border-bottom:1px solid var(--rule); white-space:nowrap; }
+  td { padding:6px 10px; border-bottom:1px solid var(--hairline); white-space:nowrap; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; }
+  td.hot { color:var(--crit); }
+  .formula { background:var(--surface); border:1px solid var(--hairline); padding:12px 16px; font:500 13px/1.9 var(--mono); color:var(--ink); margin:10px 0; overflow-x:auto; }
   .formula .c { color:var(--muted); }
-  footer { margin-top:40px; font-size:12px; color:var(--muted); border-top:1px solid var(--grid); padding-top:14px; }
+  footer { margin-top:48px; font-size:12px; color:var(--muted); border-top:1px solid var(--hairline); padding-top:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Lido Earn · position reference</div>
-  <h1>Position Atlas — how every trade works, drawn</h1>
-  <p class="sub">One diagram per position: where the capital comes from, what it does, where the yield comes from, what kills it. Leverage and net APY are <b>measured on-chain 2026-07-18</b> (aToken/debt balances; equities match the Mellow API ±0.23%). Verdicts from the position dossier. Rates are the Jul-18 snapshot — the live board has current values.</p>
-  <div class="nav"><a href="index.html">&larr; benchmark board</a><a href="flows.html">daily flows</a><a href="architecture.html">architecture map</a></div>
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Lido Earn · curation research</div>
+      <h1>Position atlas</h1>
+    </div>
+    <div class="mast-right">
+      <nav class="nav"><a href="index.html">Board</a><a href="flows.html">Daily flows</a><span class="here">Position atlas</span><a href="architecture.html">Architecture</a></nav>
+    </div>
+  </div>
+  <p class="sub">One diagram per position: where the capital comes from, what it does, where the yield comes from, what kills it. Leverage and net APY are measured on-chain 2026-07-18 (aToken/debt balances; equities match the Mellow API ±0.23%). Verdicts from the position dossier. Rates are the Jul-18 snapshot — the live board has current values.</p>
 
   <h2><span class="idx">00</span>How leverage is worked out</h2>
   <div class="card">
@@ -82,26 +91,26 @@
       net APY = (s·C − b·D) / E = s·L − b·(L−1) <span class="c">· s = yield on collateral, b = borrow rate</span><br>
       liquidation drawdown = 1 − LTV<sub>now</sub> / LT <span class="c">· how far collateral price falls before liquidation</span>
     </div>
-    <p class="note"><b>How we measured it:</b> each position lives at an on-chain address. We read its aToken balance (= C) and variable-debt-token balance (= D) directly, so L is arithmetic, not an assumption. <b>Worked example (E1):</b> equity $47.0M, measured L 6.82× ⇒ C = 6.82 × 47.0 = <b>$320M gross wstETH</b> supplied, D = $273M WETH borrowed. Net = (2.21%×320 − 2.01%×273)/47 = <b>≈3.3%</b> — matching the measured 3.27%. The loop "multiplies" the vault's capital: $47M of depositor money controls $320M of positions. That's also why unwinds move markets: the gross, not the equity, is what must exit.</p>
+    <p class="note">How we measured it: each position lives at an on-chain address. We read its aToken balance (= C) and variable-debt-token balance (= D) directly, so L is arithmetic, not an assumption. Worked example (E1): equity $47.0M, measured L 6.82× ⇒ C = 6.82 × 47.0 = $320M gross wstETH supplied, D = $273M WETH borrowed. Net = (2.21%×320 − 2.01%×273)/47 = ≈3.3% — matching the measured 3.27%. The loop "multiplies" the vault's capital: $47M of depositor money controls $320M of positions. That's also why unwinds move markets: the gross, not the equity, is what must exit.</p>
   </div>
 
   <h2><span class="idx">01</span>EarnETH — the ETH loops</h2>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">E1</span><span class="pname">Aave levered wstETH/ETH</span><span class="pstats">30.5% · equity <b>$47.0M</b> · L <b>6.82×</b> · net <b>3.27%</b></span><span class="verdict v-hold">HOLD · trim L to ≤5×</span></div>
+    <div class="poshead"><span class="pid">E1</span><span class="pname">Aave levered wstETH/ETH</span><span class="pstats">30.5% · equity $47.0M · L 6.82× · net 3.27%</span><span class="verdict v-hold">HOLD · trim L to ≤5×</span></div>
     <div class="flow">
       <div class="step src"><div class="t">Depositor ETH</div><div class="d">staked via Lido → wstETH</div><div class="m">earns stETH APR 2.21%</div></div>
       <div class="step act"><div class="t">Supply wstETH on Aave</div><div class="d">E-mode 93/95/1</div><div class="m">gross C = $320M</div></div>
       <div class="step act"><div class="t">Borrow WETH</div><div class="d">2.01% · re-stake → wstETH → resupply, ~6 turns</div><div class="m">D = $273M</div></div>
       <div class="step yld"><div class="t">Yield = spread × L</div><div class="d">(2.21 − 2.01) per turn</div><div class="m">= 3.27% on equity</div></div>
     </div>
-    <div class="loopback">↺ borrow → stake → supply → borrow… each turn adds +0.20pp of carry and a full turn of rate risk</div>
+    <div class="loopback">Loop: borrow → stake → supply → borrow… each turn adds +0.20pp of carry and a full turn of rate risk</div>
     <div class="liq">liquidation: exchange-rate oracle ⇒ market depeg CANNOT liquidate; only slashing/rate-drift reaches LT 95. Kill risk = borrow rate &gt; stETH APR (zero-carry at 86.3% utilization; now 78.6%).</div>
     <div class="riskline"><span>rate-spike → negative carry (Apr 2026: 10 days at max rate = −22% APR at this L)</span><span>unwind crowding: ~12%+ of Core wstETH</span></div>
   </div>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">E4</span><span class="pname">Spark levered wstETH/ETH</span><span class="pstats">12.8% · equity <b>$19.8M</b> · L <b>8.94×</b> · net <b>4.15%</b></span><span class="verdict v-reduce">REDUCE ≤8% · ≤5×</span></div>
+    <div class="poshead"><span class="pid">E4</span><span class="pname">Spark levered wstETH/ETH</span><span class="pstats">12.8% · equity $19.8M · L 8.94× · net 4.15%</span><span class="verdict v-reduce">REDUCE ≤8% · ≤5×</span></div>
     <div class="flow">
       <div class="step src"><div class="t">wstETH</div><div class="m">2.21% intrinsic</div></div>
       <div class="step act"><div class="t">Supply on Spark</div><div class="d">E-mode 92/93/1</div><div class="m">C ≈ $177M</div></div>
@@ -113,28 +122,28 @@
   </div>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">E5</span><span class="pname">Aave levered rsETH/ETH</span><span class="pstats">11.9% · equity <b>$18.4M</b> · L <b>12.17×</b> · net <b>6.92%</b></span><span class="verdict v-remove">REMOVE via Kelp queue</span></div>
+    <div class="poshead"><span class="pid">E5</span><span class="pname">Aave levered rsETH/ETH</span><span class="pstats">11.9% · equity $18.4M · L 12.17× · net 6.92%</span><span class="verdict v-remove">REMOVE via Kelp queue</span></div>
     <div class="flow">
       <div class="step src"><div class="t">rsETH (KelpDAO LRT)</div><div class="d">staking + restaking</div><div class="m">~2.43% intrinsic</div></div>
       <div class="step act"><div class="t">Supply on Aave</div><div class="d">rsETH E-mode — now FROZEN (LTV set to 0)</div><div class="m">C ≈ $224M ≈ 24% of ALL rsETH (supply shrank post-exploit)</div></div>
       <div class="step act"><div class="t">Borrow WETH 2.01%</div><div class="d">widest carry in the book: +0.42pp/turn</div><div class="m">12 turns deep</div></div>
       <div class="step rsk"><div class="t">Exit ≈ trapped</div><div class="d">DEX: −36% at 500 rsETH. Market frozen on Aave. Par exit ≈ 17 Kelp-queue cycles</div><div class="m">≈ 4–6 MONTHS to fully unwind</div></div>
     </div>
-    <div class="liq">at 12.17× the position's health factor is <b>1.035</b> — a hair above the 1.0 liquidation line — on a FROZEN market it can't easily grow out of. A 0.8% move in rsETH's internal rate ≈ −10% of equity. Verified on-chain 2026-07-18.</div>
+    <div class="liq">at 12.17× the position's health factor is 1.035 — a hair above the 1.0 liquidation line — on a FROZEN market it can't easily grow out of. A 0.8% move in rsETH's internal rate ≈ −10% of equity. Verified on-chain 2026-07-18.</div>
     <div class="riskline"><span>bigger than the day it blew up (11.9% vs 9%)</span><span>marginal carry vs wstETH loop ≈ +10bp of vault APY — the whole reward for the tail</span></div>
   </div>
 
   <h2><span class="idx">02</span>EarnETH — the USD carry complex (E2 + E3 + E6 = ONE trade)</h2>
-  <p class="note"><b>Where does E3's USD come from, if depositors only put in ETH?</b> It's <b>borrowed</b>. The arithmetic proves it: E2 debt ≈ $16.0M + E6 debt ≈ $4.3M = <b>$20.3M of borrowed USD(e)</b> ≈ the <b>$19.7M earnUSD holding (E3)</b>. E2/E6 are the funding legs; E3 is the asset leg. One trade, reported as three lines.</p>
+  <p class="note">Where does E3's USD come from, if depositors only put in ETH? It's borrowed. The arithmetic proves it: E2 debt ≈ $16.0M + E6 debt ≈ $4.3M = $20.3M of borrowed USD(e) ≈ the $19.7M earnUSD holding (E3). E2/E6 are the funding legs; E3 is the asset leg. One trade, reported as three lines.</p>
   <div class="card pos">
-    <div class="poshead"><span class="pid">E2+E6+E3</span><span class="pname">The combined carry trade</span><span class="pstats">36.1% of vault · combined equity <b>$55.3M</b> · combined net ≈ <b>3.6%</b></span><span class="verdict v-reduce">RESTRUCTURE</span></div>
+    <div class="poshead"><span class="pid">E2+E6+E3</span><span class="pname">The combined carry trade</span><span class="pstats">36.1% of vault · combined equity $55.3M · combined net ≈ 3.6%</span><span class="verdict v-reduce">RESTRUCTURE</span></div>
     <div class="flow">
       <div class="step src"><div class="t">wstETH collateral</div><div class="d">$44.6M on Aave (LT 81) + $11.3M on Spark (LT 84) — NOT in E-mode</div><div class="m">keeps earning 2.21%</div></div>
       <div class="step act"><div class="t">Borrow USDe</div><div class="d">93% of debt is USDe at ~2.39% (cheaper than USDT 3.47 / USDC 3.93)</div><div class="m">$20.3M debt</div></div>
       <div class="step yld"><div class="t">Deploy into earnUSD</div><div class="d">$19.7M at 6.17% — which is 42% Plasma syrup, 25% Ethena…</div><div class="m">carry = 6.17 − 2.39 ≈ +3.8pp on borrowed $</div></div>
       <div class="step rsk"><div class="t">The recursion</div><div class="d">if ETH crashes, USD must come back FAST — but it sits behind earnUSD's 48h window, sUSDe 7d cooldowns, Plasma exits</div><div class="m">repay-speed ≠ liquidation-speed</div></div>
     </div>
-    <div class="liq">measured LTV ≈ 36% vs LT 81 ⇒ liquidation needs ETH ≈ <b>−55%</b> — NOT close today. The danger is the path: at −40% the buffer is thin AND the repayment asset is slow. Defenses in order: (1) add wstETH collateral from the $11M idle sleeve (instant, no selling), (2) repay from idle, (3) unwind earnUSD (slow — 48h+). LTV ladder: 36% → liq at −55.6% · 45% → −44% · 55% → −32% · 65% → −20%.</div>
+    <div class="liq">measured LTV ≈ 36% vs LT 81 ⇒ liquidation needs ETH ≈ −55% — NOT close today. The danger is the path: at −40% the buffer is thin AND the repayment asset is slow. Defenses in order: (1) add wstETH collateral from the $11M idle sleeve (instant, no selling), (2) repay from idle, (3) unwind earnUSD (slow — 48h+). LTV ladder: 36% → liq at −55.6% · 45% → −44% · 55% → −32% · 65% → −20%.</div>
     <div class="riskline"><span>quirk: USDe-denominated debt = accidental short-USDe hedge (debt shrinks if USDe breaks)</span><span>USDe borrow-rate spikes (Oct-25 style) flip the carry</span><span>probable double fee on the earnUSD sleeve</span></div>
   </div>
 
@@ -146,19 +155,19 @@
   <h2><span class="idx">03</span>EarnUSD positions</h2>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">U1</span><span class="pname">Aave-Plasma levered syrupUSDT/USDT0</span><span class="pstats">41.9% · equity <b>$15.5M</b> · L <b>6.56×</b> · net <b>4.30%</b></span><span class="verdict v-remove">REMOVE levered → ≤10% unlevered mainnet</span></div>
+    <div class="poshead"><span class="pid">U1</span><span class="pname">Aave-Plasma levered syrupUSDT/USDT0</span><span class="pstats">41.9% · equity $15.5M · L 6.56× · net 4.30%</span><span class="verdict v-remove">REMOVE levered → ≤10% unlevered mainnet</span></div>
     <div class="flow">
       <div class="step src"><div class="t">syrupUSDT</div><div class="d">Maple institutional credit receipt</div><div class="m">~4.15% intrinsic (NAV-accruing)</div></div>
       <div class="step act"><div class="t">Supply on Aave-Plasma</div><div class="d">e-mode 90/92/4</div><div class="m">C ≈ $100M ≈ 28–35% of the whole market</div></div>
       <div class="step act"><div class="t">Borrow USDT0 ~3.95%</div><div class="d">at 90.8% utilization — ON the kink; printed ~7% on Jul 14</div><div class="m">D ≈ $86M ≈ most of the chain's free USDT0</div></div>
       <div class="step rsk"><div class="t">Exit runs through 3 doors</div><div class="d">sell/unwind syrup → USDT0 → bridge off Plasma (chain TVL −89% from peak)</div><div class="m">days calm · weeks stressed · vs a 48h SLA</div></div>
     </div>
-    <div class="liq">carry hit <b>−0.88pp/turn at the Jul-14 spike</b> (net −0.73%, borrow ≈5.0%; the header's net 4.30% is the calmer Jul-18 measured read) — USDT0 borrow spiked past syrupUSDT's 4.15% yield. Best case even at the 92% kink is only +0.06pp/turn (net ~+4.5% ≈ unlevered syrup + 35bp). A 0.5–0.6% NAV markdown trips the DAO's 1% trigger alone. Oracle = Chainlink NAV feed — no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset). Verified on-chain 2026-07-18.</div>
+    <div class="liq">carry hit −0.88pp/turn at the Jul-14 spike (net −0.73%, borrow ≈5.0%; the header's net 4.30% is the calmer Jul-18 measured read) — USDT0 borrow spiked past syrupUSDT's 4.15% yield. Best case even at the 92% kink is only +0.06pp/turn (net ~+4.5% ≈ unlevered syrup + 35bp). A 0.5–0.6% NAV markdown trips the DAO's 1% trigger alone. Oracle = Chainlink NAV feed — no liquidation while a secondary price collapses (the Re7/xUSD cluster, same chain, same quote asset). Verified on-chain 2026-07-18.</div>
     <div class="riskline"><span>position IS its own exit market</span><span>USDT0 = LayerZero OFT, 2-of-2 DVN (Kelp failure category)</span><span>net 4.30% ≈ unlevered mainnet syrup + ~15bp — the stack earns almost nothing</span></div>
   </div>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">U2·U3·U4</span><span class="pname">Levered Ethena (Plasma 10.0% · Mantle 9.7% · mainnet 3.4%)</span><span class="pstats">L <b>5.86× / 9.00× / 5.66×</b> · net on-chain <b>−2.99% / +4.34% / −3.15%</b>*</span><span class="verdict v-reduce">TRIM / REMOVE pre-Aug-11 / UNLEVER</span></div>
+    <div class="poshead"><span class="pid">U2·U3·U4</span><span class="pname">Levered Ethena (Plasma 10.0% · Mantle 9.7% · mainnet 3.4%)</span><span class="pstats">L 5.86× / 9.00× / 5.66× · net on-chain −2.99% / +4.34% / −3.15%*</span><span class="verdict v-reduce">TRIM / REMOVE pre-Aug-11 / UNLEVER</span></div>
     <div class="flow">
       <div class="step src"><div class="t">Collateral: USDe + sUSDe MIX</div><div class="d">on-chain it's ~36–51% RAW USDe (earns 0) + sUSDe — NOT the pure sUSDe the disclosures imply</div><div class="m">blended collateral yield dragged low</div></div>
       <div class="step act"><div class="t">Borrow STABLECOINS</div><div class="d">USDT / USDC / USDT0 at 3.5–5.0% — verified vUSDe debt = 0, so they do NOT borrow USDe</div><div class="m">the disclosure ("borrow USDe") ≠ the on-chain reality</div></div>
@@ -169,7 +178,7 @@
   </div>
 
   <div class="card pos">
-    <div class="poshead"><span class="pid">U5–U10</span><span class="pname">Conservative sleeve + idle</span><span class="pstats">SparkLend USDC 14.9% @3.63 · syrupUSDC 9.4% @4.82 · syrupUSDT 7.2% @4.15 · sUSDe 1.6% · Sentora 0.5% · <b>idle 0.1%</b></span><span class="verdict v-increase">SPARK + IDLE UP</span></div>
+    <div class="poshead"><span class="pid">U5–U10</span><span class="pname">Conservative sleeve + idle</span><span class="pstats">SparkLend USDC 14.9% @3.63 · syrupUSDC 9.4% @4.82 · syrupUSDT 7.2% @4.15 · sUSDe 1.6% · Sentora 0.5% · idle 0.1%</span><span class="verdict v-increase">SPARK + IDLE UP</span></div>
     <div class="flow">
       <div class="step src"><div class="t">USDC/USDT deposits</div><div class="m">the actual depositor money</div></div>
       <div class="step yld"><div class="t">Plain lending + unlevered credit</div><div class="d">no leverage, no bridges — the defensible half of the vault</div><div class="m">3.6–4.8%</div></div>
@@ -179,8 +188,8 @@
 
   <h2><span class="idx">04</span>Lending-market cheat sheet — every parameter the book runs on</h2>
   <div class="card">
-    <p class="note" style="margin-top:0;font-size:12.5px"><b>How to read this — the whole mechanism in one paragraph.</b> <b>LTV</b> is the entry cap: LTV 80 means $100 of collateral can borrow $80, and it's only checked when you act. <b>LT (liquidation threshold)</b> is the higher bar where the position becomes seizable; the LTV→LT gap is your safety margin, and drawdown-to-liquidation = 1 − LTV/LT. Live safety is the <b>Health Factor = Σ(collateral × LT) ÷ debt</b> — below 1, any keeper bot may repay part of your debt and take collateral worth more than it repaid; that excess is the <b>penalty</b> column (1% in e-modes, 4–7% outside). <b>E-mode</b> grants correlated pairs (wstETH/ETH) much higher limits because their relative price barely moves — and since <b>max leverage = 1/(1−LTV)</b>, e-mode is what makes loops possible at all (LTV 93 → 14.3×). A loop is <i>short the borrow rate</i>: on exchange-rate oracles (which ignore depegs by design) same-asset loops die by the rate tail or a market freeze — almost never by price.</p>
-    <p class="note" style="margin-top:12px"><b>Collateral parameters</b> (LTV = max borrow at entry · LT = liquidation threshold · penalty = liquidator bonus). All read on-chain 2026-07-17/18.</p>
+    <p class="note" style="margin-top:0;font-size:12.5px">How to read this — the whole mechanism in one paragraph. LTV is the entry cap: LTV 80 means $100 of collateral can borrow $80, and it's only checked when you act. LT (liquidation threshold) is the higher bar where the position becomes seizable; the LTV→LT gap is your safety margin, and drawdown-to-liquidation = 1 − LTV/LT. Live safety is the Health Factor = Σ(collateral × LT) ÷ debt — below 1, any keeper bot may repay part of your debt and take collateral worth more than it repaid; that excess is the penalty column (1% in e-modes, 4–7% outside). E-mode grants correlated pairs (wstETH/ETH) much higher limits because their relative price barely moves — and since max leverage = 1/(1−LTV), e-mode is what makes loops possible at all (LTV 93 → 14.3×). A loop is <i>short the borrow rate</i>: on exchange-rate oracles (which ignore depegs by design) same-asset loops die by the rate tail or a market freeze — almost never by price.</p>
+    <p class="note" style="margin-top:12px">Collateral parameters (LTV = max borrow at entry · LT = liquidation threshold · penalty = liquidator bonus). All read on-chain 2026-07-17/18.</p>
     <table>
       <tr><th>Market · mode</th><th class="num">Max LTV</th><th class="num">Liq. threshold</th><th class="num">Penalty</th><th>Used by</th></tr>
       <tr><td>Aave Core · E-mode "ETH-correlated" (wstETH/WETH)</td><td class="num">93%</td><td class="num">95%</td><td class="num">1%</td><td>E1</td></tr>
@@ -192,7 +201,7 @@
       <tr><td>Aave-Plasma · syrupUSDT stablecoin e-mode</td><td class="num">90%</td><td class="num">92%</td><td class="num">4%</td><td>U1</td></tr>
       <tr><td>Aave-Plasma · syrupUSDT non-e-mode</td><td class="num">0.05%</td><td class="num">0.10%</td><td class="num">—</td><td>(e-mode-only collateral)</td></tr>
     </table>
-    <p class="note" style="margin-top:14px"><b>Interest-rate curves</b> — the borrow-rate tail is where levered positions die. Rate = slope1 up to the kink, then slope1 + slope2 pro-rata to 100%.</p>
+    <p class="note" style="margin-top:14px">Interest-rate curves — the borrow-rate tail is where levered positions die. Rate = slope1 up to the kink, then slope1 + slope2 pro-rata to 100%.</p>
     <table>
       <tr><th>Market</th><th class="num">Util (Jul-20)</th><th class="num">Kink</th><th class="num">Slope1</th><th class="num">Slope2</th><th class="num">Max rate @100%</th><th>Read</th></tr>
       <tr><td>Aave Core WETH</td><td class="num">76.1%</td><td class="num">92%</td><td class="num">2.35%</td><td class="num">6%</td><td class="num">8.35%</td><td>tail CAPPED — right venue for big loops</td></tr>
@@ -203,15 +212,15 @@
       <tr><td>Aave-Plasma USDT0</td><td class="num hot">92.1%</td><td class="num">~90%</td><td class="num">—</td><td class="num">—</td><td class="num">~7%+ observed</td><td>ON the kink; Jul-14 spike proved it</td></tr>
       <tr><td>crvUSD (mint vs wstETH)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">2.17% (Jul-18)</td><td>cheapest USD vs wstETH anywhere (rate floats)</td></tr>
     </table>
-    <p class="note" style="margin-top:14px"><b>Liquidation distance ready-reckoner</b> — drawdown = 1 − LTV/LT:</p>
+    <p class="note" style="margin-top:14px">Liquidation distance ready-reckoner — drawdown = 1 − LTV/LT:</p>
     <table>
       <tr><th>Entry LTV →</th><th class="num">36% (E2 now)</th><th class="num">45%</th><th class="num">55%</th><th class="num">65%</th><th class="num">80% (loop @5×)</th><th class="num">85.3% (E1 @6.82×)</th></tr>
       <tr><td>vs LT 81 (Aave wstETH/USD)</td><td class="num">−55.6%</td><td class="num">−44.4%</td><td class="num">−32.1%</td><td class="num">−19.8%</td><td class="num">—</td><td class="num">—</td></tr>
       <tr><td>vs LT 95 (E-mode loops)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">−15.8%*</td><td class="num">−10.2%*</td></tr>
     </table>
     <p class="note" style="font-size:11.5px">*For E-mode loops the "price" is the wstETH/ETH exchange-rate ratio, not ETH/USD — it only moves on slashing or rate drift, which is why loop liquidations are remote and RATE risk (the IRM table) is the real killer. Fee on liquidation = the penalty column, paid out of your collateral.</p>
-    <p class="note" style="margin-top:14px"><b>Fees — who takes what.</b> Earn vaults: <b>1% management + 10% performance over a high-watermark</b>, accrued at each oracle report and paid by <b>minting shares to the treasury</b> — dilution, not cash, so TVL is untouched and holders' share % shrinks. No deposit or exit fee; the withdrawal cost is time (~72h). Aave keeps a <b>reserve factor</b> (~10–15% of interest — why supply APY &lt; borrow APY), and the liquidation penalty above is the fee you pay for being liquidated.</p>
-    <p class="note" style="margin-top:14px"><b>Reasonable leverage</b> — pick L by three tests and the lowest answer wins: (1) buffer ≥ 1.5× the pair's worst historical basis move · (2) survive 30 days at slope2 for &lt;25bp of NAV · (3) the unwind fits the redemption SLA at real depth:</p>
+    <p class="note" style="margin-top:14px">Fees — who takes what. Earn vaults: 1% management + 10% performance over a high-watermark, accrued at each oracle report and paid by minting shares to the treasury — dilution, not cash, so TVL is untouched and holders' share % shrinks. No deposit or exit fee; the withdrawal cost is time (~72h). Aave keeps a reserve factor (~10–15% of interest — why supply APY &lt; borrow APY), and the liquidation penalty above is the fee you pay for being liquidated.</p>
+    <p class="note" style="margin-top:14px">Reasonable leverage — pick L by three tests and the lowest answer wins: (1) buffer ≥ 1.5× the pair's worst historical basis move · (2) survive 30 days at slope2 for &lt;25bp of NAV · (3) the unwind fits the redemption SLA at real depth:</p>
     <table>
       <tr><th>Collateral class</th><th>Sensible</th><th>Aggressive</th><th>Avoid</th><th>Binding constraint</th></tr>
       <tr><td>ETH LST loop (wstETH/ETH e-mode)</td><td class="num">3–5×</td><td class="num">6–8×</td><td class="num">&gt;8×</td><td>rate tail, then basis (worst-ever −6.6%)</td></tr>
