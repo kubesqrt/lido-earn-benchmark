@@ -960,7 +960,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     j("https://api.sevenseas.capital/etherfi/ethereum/performance/" + addr).then(r => [k, r]).catch(() => [k, null])
   )).then(entries => { const ok = entries.filter(e => e[1]).length; setStatus("Seven Seas", ok ? "ok" : "err", ok + "/2"); return Object.fromEntries(entries); });
 
-  const mellowHist = key => j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/historical-data?from_timestamp=${Math.floor(Date.now()/1e3) - 92*86400}&days=92`).catch(() => null);
+  const mellowHist = key => j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/historical-data?from_timestamp=${Math.floor(Date.now()/1e3) - 180*86400}&days=180`).catch(() => null);
   const [hist, borrowMap, mEth, mUsd, stethApr, seven, hEth, hUsd] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, mellowHist("earnETH"), mellowHist("earnUSD")]);
 
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
@@ -981,6 +981,14 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     .filter(([n, c]) => c.grp === grp && stat(n))
     .map(([n, c]) => ({ name: n, ...stat(n), tag: c.tag, peer: !!c.peer }));
   const ethRows = mkRows("eth"), usdRows = mkRows("usd");
+  // ether.fi Liquid: use the vault's own curator API (Seven Seas) net APY, not DefiLlama's
+  // base-only figure — DefiLlama excludes rewards and understates it.
+  const sevenNet = k => { try { const r = seven[k].Response, b = r.global_apy_breakdown || {};
+    const v = b.real_apy != null ? b.real_apy : r.apy; return v != null ? v * 100 : null; } catch (e) { return null; } };
+  [["eth", "ether.fi Liquid ETH", ethRows], ["usd", "ether.fi Liquid USD", usdRows]].forEach(([k, nm, rows]) => {
+    const a = sevenNet(k), row = rows.find(r => r.name === nm);
+    if (row && a != null && isFinite(a)) { row.apy = a; row.srcNet = true; }
+  });
   if (ethApy != null) ethRows.push({ name: "Lido EarnETH", apy: ethApy, m30: null, sigma: null, tvl: ethTvl || 0, tag: "meta-vault · levered loops", lido: true });
   if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
   ethRows.sort((a, b) => b.apy - a.apy); usdRows.sort((a, b) => b.apy - a.apy);
@@ -1005,9 +1013,9 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     tiles.push({ k: "EarnUSD APY · 14d TW", v: usdApy.toFixed(2) + "%",
       d: `vs sUSDS ${USD_BENCH.toFixed(2)}% ${sgn(usdApy, USD_BENCH)} · peer median ${usdPeerMed.toFixed(2)}% ${sgn(usdApy, usdPeerMed)}` });
   if (ethApy != null)
-    tiles.push({ k: "EarnETH TVL", v: fmt$(ethTvl || 0), d: "Mellow API · allocations in section 05" });
+    tiles.push({ k: "EarnETH TVL", v: fmt$(ethTvl || 0), d: "live vault TVL" });
   if (usdApy != null)
-    tiles.push({ k: "EarnUSD TVL", v: fmt$(usdTvl || 0), d: "Mellow API · allocations in section 05" });
+    tiles.push({ k: "EarnUSD TVL", v: fmt$(usdTvl || 0), d: "live vault TVL" });
   $("tiles").innerHTML = tiles.length ? tiles.map(t => `<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join("")
     : '<div class="skel">Mellow API unavailable — Earn tiles hidden.</div>';
 
@@ -1063,15 +1071,15 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   };
   let ethRowsA = null, usdRowsA = null;
   if (mEth) {
-    $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
-    sparkline($("earnEthSpark"), (mEth.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
+    $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted</small>`;
+    sparkline($("earnEthSpark"), (earnEthSeries && earnEthSeries.length > 8 ? earnEthSeries : (mEth.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     ethRowsA = flattenAllocations(mEth.d);
     renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
     renderLenses("lensEth", ethRowsA, "eth");
   } else { $("earnEthHead").textContent = "EarnETH — Mellow API unavailable"; $("lensEth").innerHTML = ""; }
   if (mUsd) {
-    $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted, Mellow API</small>`;
-    sparkline($("earnUsdSpark"), (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy })), "vault APY reports, ~4wk");
+    $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted</small>`;
+    sparkline($("earnUsdSpark"), (earnUsdSeries && earnUsdSeries.length > 8 ? earnUsdSeries : (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     usdRowsA = flattenAllocations(mUsd.d);
     renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
     renderLenses("lensUsd", usdRowsA, "usd");
