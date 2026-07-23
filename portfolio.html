@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Lido Earn — Portfolio</title>
+<title>Lido Earn Portfolio</title>
 <style>
   /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
@@ -166,8 +166,8 @@
   </div>
   <h2><span class="idx">01</span>Earn positions</h2>
   <div class="grid2">
-    <div class="card"><div class="cardhead">EarnETH — vault stats</div><div class="vstats" id="vstatsEth"><div class="skel">reading chain&hellip;</div></div></div>
-    <div class="card"><div class="cardhead">EarnUSD — vault stats</div><div class="vstats" id="vstatsUsd"><div class="skel">reading chain&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnETH vault stats</div><div class="vstats" id="vstatsEth"><div class="skel">reading chain&hellip;</div></div></div>
+    <div class="card"><div class="cardhead">EarnUSD vault stats</div><div class="vstats" id="vstatsUsd"><div class="skel">reading chain&hellip;</div></div></div>
   </div>
   <div class="grid2">
     <div class="card">
@@ -204,19 +204,19 @@ const VAULTS = {
   earnETH: { addr: "0x6a37725ca7f4CE81c004c955f7280d5C704a249e" },
   earnUSD: { addr: "0x014e6DA8F283C4aF65B2AA0f201438680A004452" },
 };
-// allocSource — click-through live-strategy adapter per vault:
+// allocSource click-through live-strategy adapter per vault:
 //   t:"morpho"   Morpho V1 MetaMorpho vault (api.morpho.org/graphql, vaultByAddress)
 //   t:"morphoV2" Morpho V2 vault (same endpoint, vaultV2s + adapters/positions)
 //   t:"yearn"    Yearn v3 (ydaemon.yearn.fi/1/vaults/{addr})
-//   t:"seven"    ether.fi Liquid — reuses the Seven Seas fetch already on the page (k: eth|usd)
+//   t:"seven"    ether.fi Liquid reuses the Seven Seas fetch already on the page (k: eth|usd)
 //   t:"fluidEth"/"fluidUsd" Fluid Lite (api.instadapp.io / api.fluid-lite.instadapp.ai)
-//   t:"none"     no public allocation API — note + DeBank link where the address is known
+//   t:"none"     no public allocation API note + DeBank link where the address is known
 // Addresses resolved 2026-07 against each API and cross-checked by symbol + TVL.
-const MM_NOTE = "Money market, not a curated vault — the pool itself is the whole strategy; the APY on the board is the live supply rate.";
-const XC_NOTE = "Cross-chain vault — allocation not exposed through a public API wired here; DefiLlama series only.";
+const MM_NOTE = "Money market, not a curated vault the pool itself is the whole strategy; the APY on the board is the live supply rate.";
+const XC_NOTE = "Cross-chain vault allocation not exposed through a public API wired here; DefiLlama series only.";
 const POOL_IDS = {
   "Lido stETH":              { id: "747c1d2a-c668-4682-b9f9-296708a3dd90", tag: "benchmark · plain staking", grp: "eth",
-                               allocSource: { t: "none", note: "Benchmark, not a vault — the strategy is Ethereum staking via Lido; the APR is the whole story." } },
+                               allocSource: { t: "none", note: "Benchmark, not a vault the strategy is Ethereum staking via Lido; the APR is the whole story." } },
   "ether.fi Liquid ETH":     { id: "b86d4934-2e75-415a-bdd2-e28143d72491", tag: "curated · levered Aave", grp: "eth", peer: true,
                                allocSource: { t: "seven", k: "eth", addr: "0xf0bb20865277aBd641a307eCe5Ee04E79073416C" } },
   "Steakhouse ETH (Morpho)": { id: "eed40ce3-ca1a-4433-b3e1-0689ed33d5cd", tag: "unlevered wstETH/WETH lend", grp: "eth", peer: true,
@@ -246,13 +246,13 @@ const POOL_IDS = {
   "Sentora PYUSD Main":      { id: "699f25fe-09f4-4f82-8f58-baa5b0af8fa4", tag: "PYUSD markets + rewards", grp: "usd", peer: true,
                                allocSource: { t: "morphoV2", addr: "0xb576765fB15505433aF24FEe2c0325895C559FB2" } },
   "Ethena sUSDe":            { id: "66985a81-9c51-46ca-9977-42b4fe7bc6df", tag: "basis trade", grp: "usd",
-                               allocSource: { t: "none", addr: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497", note: "Delta-neutral basis book — reserve detail is on Ethena's transparency page, not a public allocation API." } },
+                               allocSource: { t: "none", addr: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497", note: "Delta-neutral basis book reserve detail is on Ethena's transparency page, not a public allocation API." } },
   "Sky sUSDS (SSR)":         { id: "d8c4eff5-c8a9-46fc-a888-057c4c668e72", tag: "benchmark · governance rate", grp: "usd",
-                               allocSource: { t: "none", addr: "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD", note: "Governance-set savings rate — there is no allocation to inspect; the rate is the strategy." } },
+                               allocSource: { t: "none", addr: "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD", note: "Governance-set savings rate there is no allocation to inspect; the rate is the strategy." } },
   "Aave v3 USDC (lend)":     { id: "aa70268e-4b52-42bf-a116-608b370f9501", tag: "floor · plain lend", grp: "usd",
                                allocSource: { t: "none", addr: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", note: MM_NOTE } },
-  "Plasma USD (Veda) · Plasma": { id: "95d4f805-1800-4184-98a0-6e49b3ccad8a", tag: "Plasma-native multi-strategy — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
-  "K3 USDT0 · Plasma":       { id: "93b667e0-edbc-4264-984d-8b078a2fd9b9", tag: "K3 Euler · Plasma-native — EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "Plasma USD (Veda) · Plasma": { id: "95d4f805-1800-4184-98a0-6e49b3ccad8a", tag: "Plasma-native multi-strategy EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
+  "K3 USDT0 · Plasma":       { id: "93b667e0-edbc-4264-984d-8b078a2fd9b9", tag: "K3 Euler · Plasma-native EarnUSD comp", grp: "usd", peer: true, allocSource: { t: "none", note: XC_NOTE } },
 };
 const TREND = {
   eth: ["Lido stETH", "ether.fi Liquid ETH", "Steakhouse ETH (Morpho)"],
@@ -262,25 +262,25 @@ const SERIES = ["var(--accent)", "var(--aqua)", "var(--yellow)", "var(--violet)"
 const BASELINE_COL = "var(--muted)";
 const SLOTS = ["#6d9dc9","#5fa08f","#b3925e","#9186ab","#bd7d70","#a97f96","#b0805a","#7793ad"];
 const SEVENSEAS = { eth: "0xf0bb20865277aBd641a307eCe5Ee04E79073416C", usd: "0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C" };
-// RWA / tokenized-credit universe — live APY/TVL from DefiLlama; metadata is researched (2026-07-18).
+// RWA / tokenized-credit universe live APY/TVL from DefiLlama; metadata is researched (2026-07-18).
 // tier: tbill | credit | frontier · redeem: liquidity vs a 48h vault SLA · oracle: nav (attested) | market · flag: curation caution
 const RWA = [
   { n: "Sky sUSDS", id: "d8c4eff5-c8a9-46fc-a888-057c4c668e72", tier: "tbill", chain: "Ethereum", backing: "Sky savings rate (governance-set)", redeem: "instant", oracle: "rate", note: "the on-chain USD floor / benchmark" },
   { n: "BlackRock BUIDL", id: "b663ca59-c7e6-4435-ae4a-28d339ce6a15", tier: "tbill", chain: "Ethereum", backing: "US T-bills + repo (BlackRock/Securitize)", redeem: "T+0 via Circle", oracle: "nav", note: "the blue-chip tokenized MMF; KYC transfer-gated" },
   { n: "Ondo USDY", id: "ac61ee82-2fe4-4f9b-a9cd-7fb33f598859", tier: "tbill", chain: "Ethereum", backing: "short T-bills + bank deposits", redeem: "~T+0, transferable", oracle: "nav", note: "freely transferable yield-note; deepest T-bill token" },
-  { n: "Superstate USTB", id: "1910847a-f8b5-40ce-a1ab-1dafdded5fbb", tier: "tbill", chain: "Ethereum", backing: "US T-bills (Superstate)", redeem: "T+1, allowlisted", oracle: "nav", flag: "warn", note: "allowlisted transfers break composability — access via wrapper" },
+  { n: "Superstate USTB", id: "1910847a-f8b5-40ce-a1ab-1dafdded5fbb", tier: "tbill", chain: "Ethereum", backing: "US T-bills (Superstate)", redeem: "T+1, allowlisted", oracle: "nav", flag: "warn", note: "allowlisted transfers break composability access via wrapper" },
   { n: "Ondo OUSG", id: "7436db9b-2872-46c8-81a2-da6baff902b7", tier: "tbill", chain: "Ethereum", backing: "BUIDL + T-bill ETFs", redeem: "T+0, KYC", oracle: "nav", note: "instant-mint tokenized treasuries" },
   { n: "Circle USYC", id: "448a64ff-06fd-4e56-b63c-03662ac39010", tier: "tbill", chain: "Ethereum", backing: "reverse-repo (Hashnote/Circle)", redeem: "T+0", oracle: "nav", note: "Circle-owned; CEX-collateral rails" },
   { n: "Maple syrupUSDC", id: "43641cf5-a92e-416b-bce9-27113d3c0db6", tier: "credit", chain: "Ethereum", backing: "overcollat. institutional loans (BTC/ETH)", redeem: "~1d normal / 30d stress", oracle: "nav", note: "the liquid credit anchor; Earn already touches Maple" },
   { n: "Maple syrupUSDT", id: "8edfdf02-cdbb-43f7-bca6-954e5fe56813", tier: "credit", chain: "Ethereum", backing: "same book, USDT", redeem: "~1d normal / 30d stress", oracle: "nav", note: "USDT sibling" },
   { n: "Midas mF-ONE", id: "7d491f26-a03b-4eca-ae2c-e068391b15d3", tier: "credit", chain: "Ethereum", backing: "Fasanara fintech/SME/RE credit, 140+ originators", redeem: "monthly window, KYC", oracle: "nav", flag: "warn", note: "the yield engine; Liechtenstein-regulated, Steakhouse-curated" },
-  { n: "Midas mHYPER", id: "ebb3a954-fd67-4a3b-ac2f-3a8c7be9200b", tier: "credit", chain: "Ethereum", backing: "managed Hyperliquid/HLP yield fund", redeem: "windowed", oracle: "nav", flag: "warn", note: "HLP-linked — perp/MM risk inside an RWA wrapper" },
+  { n: "Midas mHYPER", id: "ebb3a954-fd67-4a3b-ac2f-3a8c7be9200b", tier: "credit", chain: "Ethereum", backing: "managed Hyperliquid/HLP yield fund", redeem: "windowed", oracle: "nav", flag: "warn", note: "HLP-linked perp/MM risk inside an RWA wrapper" },
   { n: "USD.ai sUSDai", id: "712ce948-bd9e-4f4a-8916-b72c447f7578", tier: "frontier", chain: "Arbitrum", backing: "GPU-collateralized loans (UCC Art.7 receipts) + T-bills", redeem: "~30d QEV auction queue", oracle: "nav", flag: "crit", note: "48% single-borrower; untested collateral; satellite only, via dated PTs" },
   { n: "Avant savUSD", id: "c74227a1-e738-4021-bbe1-13363815aecb", tier: "frontier", chain: "Avalanche", backing: "delta-neutral, senior tranche", redeem: "windowed", oracle: "nav", flag: "warn", note: "structured/basis exposure in a senior wrapper" },
   { n: "Multipli RWAUSDI", id: "8863fc1e-2029-481d-a625-06abbcba9e11", tier: "frontier", chain: "Ethereum", backing: "mixed RWA/quant", redeem: "windowed", oracle: "nav", flag: "warn", note: "newer, thinner track record" },
 ];
 const RWA_TIER = { tbill: { lbl: "T-bill" }, credit: { lbl: "Credit" }, frontier: { lbl: "Frontier" } };
-// auxiliary rate pools (not shown as table rows — used to price Earn's positions)
+// auxiliary rate pools (not shown as table rows used to price Earn's positions)
 const AUX_POOLS = {
   "rsETH (Kelp)":     "33c732f6-a78d-41da-af5b-ccd9fa5e52d5",
   "Maple syrupUSDT":  "8edfdf02-cdbb-43f7-bca6-954e5fe56813",
@@ -306,6 +306,7 @@ const _noel = { innerHTML:"", textContent:"", style:{}, dataset:{}, classList:{a
 const $ = id => document.getElementById(id) || _noel;
 const _live = id => !!document.getElementById(id);   // true only when the section exists on this page
 const fmt$ = v => v >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "K";
+const fmtEth = e => (Math.abs(e) >= 1000 ? (e/1000).toFixed(1) + "k" : Math.abs(e) >= 1 ? e.toFixed(1) : e.toFixed(4)) + " ETH";
 const pp = v => (v >= 0 ? "+" : "") + v.toFixed(2) + "pp";
 const median = a => { const s = [...a].sort((x,y) => x-y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1]+s[m])/2; };
 const mean = a => a.reduce((s,v) => s+v, 0) / a.length;
@@ -336,8 +337,8 @@ async function gql(query) {
 const debank = a => "https://debank.com/profile/" + a;
 
 // ---------- click-through live strategy viewer (Feature A) ----------
-let SEVEN = null; // Seven Seas payloads, set by main() — reused by the ether.fi adapter
-let HIST = null;  // per-pool DefiLlama history, set by main() — powers strategy cards for no-API vaults
+let SEVEN = null; // Seven Seas payloads, set by main() reused by the ether.fi adapter
+let HIST = null;  // per-pool DefiLlama history, set by main() powers strategy cards for no-API vaults
 function capRows(rows, n) { // keep panels compact: top n, aggregate the tail
   rows.sort((a, b) => b.pct - a.pct);
   if (rows.length <= n + 1) return rows;
@@ -356,7 +357,7 @@ async function morphoV1Alloc(cfg) {
   rows = capRows(rows, 11);
   const used = rows.reduce((s, r) => s + r.pct, 0);
   if (used < 99.5) rows.push({ label: "Idle / unallocated", pct: 100 - used, apy: null });
-  return { head: `${v.name} — ${fmt$(tot)} · net APY ${(st.netApy * 100).toFixed(2)}%`,
+  return { head: `${v.name} ${fmt$(tot)} · net APY ${(st.netApy * 100).toFixed(2)}%`,
            src: "Morpho API · live", rows, link: debank(cfg.addr) };
 }
 async function morphoV2Alloc(cfg) {
@@ -378,7 +379,7 @@ async function morphoV2Alloc(cfg) {
   });
   rows = capRows(rows, 11);
   if (v.idleAssetsUsd > tot * 0.001) rows.push({ label: "Idle", pct: v.idleAssetsUsd / tot * 100, apy: null });
-  return { head: `${v.name} — ${fmt$(tot)} · net APY ${v.netApy != null ? (v.netApy * 100).toFixed(2) + "%" : "—"}`,
+  return { head: `${v.name} ${fmt$(tot)} · net APY ${v.netApy != null ? (v.netApy * 100).toFixed(2) + "%" : "—"}`,
            src: "Morpho API (V2) · live", rows, link: debank(cfg.addr) };
 }
 async function yearnAlloc(cfg) {
@@ -391,7 +392,7 @@ async function yearnAlloc(cfg) {
   const used = rows.reduce((s, r) => s + r.pct, 0);
   if (used < 99.5) rows.push({ label: "Unallocated / buffer", pct: 100 - used, apy: null });
   const netApr = v.apr && v.apr.netAPR != null ? (v.apr.netAPR * 100).toFixed(2) + "%" : "—";
-  return { head: `${v.symbol || "Yearn v3"} — ${v.tvl && v.tvl.tvl ? fmt$(v.tvl.tvl) : "?"} · net APR ${netApr}`,
+  return { head: `${v.symbol || "Yearn v3"} ${v.tvl && v.tvl.tvl ? fmt$(v.tvl.tvl) : "?"} · net APR ${netApr}`,
            src: "yDaemon · live · % = debt ratio", rows, link: debank(cfg.addr) };
 }
 function sevenAlloc(cfg) {
@@ -403,7 +404,7 @@ function sevenAlloc(cfg) {
                  pct: a.allocation * 100, apy: a.apy * 100 }))
     .filter(a => a.pct > 0.3);
   rows = capRows(rows, 11);
-  return { head: `ether.fi Liquid ${cfg.k.toUpperCase()} — ${(g.apy * 100).toFixed(2)}% 7d net`,
+  return { head: `ether.fi Liquid ${cfg.k.toUpperCase()} ${(g.apy * 100).toFixed(2)}% 7d net`,
            src: "Seven Seas API · live", rows, link: debank(cfg.addr) };
 }
 async function fluidEthAlloc(cfg) {
@@ -428,7 +429,7 @@ async function fluidEthAlloc(cfg) {
   if (used < 99.5) rows.push({ label: "Buffer / instant-withdraw reserve", pct: 100 - used, apy: null });
   const usd = v.token && v.token.price ? fmt$(tvl * v.token.price) : "?";
   const apy = v.apy && v.apy.apyWithoutFee != null ? (+v.apy.apyWithoutFee).toFixed(2) + "%" : "—";
-  return { head: `Fluid Lite ETH — ${usd} · ${apy} APY · aggregated risk ratio ${(+v.aggregatedRiskRatio).toFixed(1)}/${v.maxAggregatedRiskRatio}`,
+  return { head: `Fluid Lite ETH ${usd} · ${apy} APY · aggregated risk ratio ${(+v.aggregatedRiskRatio).toFixed(1)}/${v.maxAggregatedRiskRatio}`,
            src: "Instadapp Lite API · live · net position per venue", rows, link: debank(cfg.addr) };
 }
 async function fluidUsdAlloc(cfg) {
@@ -439,12 +440,12 @@ async function fluidUsdAlloc(cfg) {
   const fusdc = +d.vaultFUSDCValue / dec || 0, idle = +d.vaultUSDCBalance / dec || 0;
   const deployed = Math.max(tot - fusdc - idle, 0);
   const rows = [
-    { label: "Strategy-deployed (looped via handler — not itemized by the API)", pct: deployed / tot * 100, apy: null },
+    { label: "Strategy-deployed (looped via handler not itemized by the API)", pct: deployed / tot * 100, apy: null },
     { label: "fUSDC buffer (Fluid Lending)", pct: fusdc / tot * 100, apy: null },
     { label: "Idle USDC", pct: idle / tot * 100, apy: null },
   ].filter(x => x.pct > 0.05);
   const price = +d.underlyingAsset.price || 1;
-  return { head: `Fluid Lite USD — ${fmt$(tot * price)} · ${(+d.rate / 100).toFixed(2)}% APY (fixed ${(+d.fixedRate / 100).toFixed(2)}% + rewards)`,
+  return { head: `Fluid Lite USD ${fmt$(tot * price)} · ${(+d.rate / 100).toFixed(2)}% APY (fixed ${(+d.fixedRate / 100).toFixed(2)}% + rewards)`,
            src: "Fluid Lite API · live", rows, link: debank(cfg.addr) };
 }
 function sparkSvg(pts, col) { // pure-string 90d sparkline for strategy cards
@@ -470,7 +471,7 @@ function noneAlloc(cfg, name) {
     const last = full[full.length - 1], m30 = mean(full.slice(-30).map(p => p.v)), sg = stdev(full.slice(-90).map(p => p.v));
     const tvl90 = full.length > 90 ? full[full.length - 91].tvl : full[0].tvl;
     const dTvl = tvl90 ? (last.tvl - tvl90) / tvl90 * 100 : null;
-    head = `${name} — ${fmt$(last.tvl)} · ${last.v.toFixed(2)}% APY`;
+    head = `${name} ${fmt$(last.tvl)} · ${last.v.toFixed(2)}% APY`;
     rows = [
       { label: "APY · 30d mean / σ 90d", pct: null, apyText: m30.toFixed(2) + "% / " + sg.toFixed(2) },
       { label: "TVL · 90d change", pct: null, apyText: dTvl != null ? (dTvl >= 0 ? "+" : "") + dTvl.toFixed(1) + "%" : "—" },
@@ -478,7 +479,7 @@ function noneAlloc(cfg, name) {
     extra = sparkSvg(pts) + `<div style="font:400 10.5px/1.6 var(--sans);color:var(--muted)">90d APY · DefiLlama series · live</div>`;
   }
   return { head, rows,
-           note: cfg.note || "Single-strategy product — there is no allocation to unfold; the series above is the whole story.",
+           note: cfg.note || "Single-strategy product there is no allocation to unfold; the series above is the whole story.",
            extra, link: cfg.addr ? debank(cfg.addr) : null,
            src: full ? "DefiLlama · live" : undefined };
 }
@@ -489,8 +490,8 @@ function fetchAlloc(name) {
 }
 async function loadAlloc(name) {
   if (/^Lido Earn/.test(name))
-    return { head: name + " — this board's own vault",
-             note: "The full live book — positions, flags and per-position yield — is in the “Vault statistics and allocations” section below." };
+    return { head: name + " this board's own vault",
+             note: "The full live book positions, flags and per-position yield is in the “Vault statistics and allocations” section below." };
   const cfg = (POOL_IDS[name] || {}).allocSource;
   if (!cfg) return { head: name, note: "No public allocation API for this vault." };
   switch (cfg.t) {
@@ -530,7 +531,7 @@ function toggleDetail(tr, forceOpen) {
   fetchAlloc(tr.dataset.name)
     .then(res => { if (det.isConnected) td.innerHTML = panelHtml(res); })
     .catch(e => { if (det.isConnected) td.innerHTML =
-      `<div class="dpanel"><span class="flag crit">live allocation unavailable — ${(e && e.message) || "fetch failed"}</span></div>`; });
+      `<div class="dpanel"><span class="flag crit">live allocation unavailable ${(e && e.message) || "fetch failed"}</span></div>`; });
 }
 
 // ---------- charts ----------
@@ -677,7 +678,7 @@ function flattenAllocations(data) {
   const top = rows.slice(0, 11);
   const rest = rows.slice(11).reduce((s, r) => s + r.pct, 0);
   if (rest > 0.05) top.push({ label: "Other", pct: rest, chain: "ethereum", cat: "other" });
-  top.full = rows; // unfolded list — used by the exposure lenses
+  top.full = rows; // unfolded list used by the exposure lenses
   return top;
 }
 // per-position yield (Feature B): direct positions → live market rate of the underlying;
@@ -696,8 +697,8 @@ function yieldEst(row, vault, ctx) {
     : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 });
   if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 });
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.62, net: 1.36, lt: 0.84 })
-    : loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.56, net: 2.05, lt: 0.81 });
+    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, note: "levered wstETH staking; the borrowed USD funds the earnUSD leg (booked separately)" })
+    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, note: "levered wstETH staking; the borrowed USD funds the earnUSD leg (booked separately)" });
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 });
   if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
@@ -708,7 +709,7 @@ function yieldEst(row, vault, ctx) {
   if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live");
   if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live");
   if (/morpho wsteth\/weth/i.test(L)) return null;
-  if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated — earns nothing");
+  if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated earns nothing");
   return null;
 }
 // render one yield cell at the current leverage assumption; pct = position share of the vault
@@ -750,7 +751,7 @@ async function rpcOn(urls, method, params) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const XFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const ZERO32 = "0x" + "0".repeat(64);
-const FEE_RECIPIENT = "0xccf2daba8bb04a232a2fda0d01010d4ef6c69b85"; // Current Meta Treasury — fee mints, excluded from deposit flow
+const FEE_RECIPIENT = "0xccf2daba8bb04a232a2fda0d01010d4ef6c69b85"; // Current Meta Treasury fee mints, excluded from deposit flow
 async function tokenFlows7d(token, blk) {
   let mint = 0, burn = 0, feeMint = 0, ok = 0, tried = 0;
   const CH = 9500, chunks = [];
@@ -773,7 +774,7 @@ function statCard(items) {
   return items.map(x => `<div class="s"><div class="k">${x.k}</div><div class="v ${x.cls || ""}">${x.v}</div><div class="d">${x.d}</div></div>`).join("");
 }
 async function loadVaultStats(cfgs) {
-  // Phase 1 — cheap reads that never fail: TVL, share price, pending queue, idle, freshness. Render immediately.
+  // Phase 1 cheap reads that never fail: TVL, share price, pending queue, idle, freshness. Render immediately.
   const px = c => (c.tvl && c.shares ? c.tvl / c.shares : 0);
   for (const c of cfgs) {
     try {
@@ -781,10 +782,12 @@ async function loadVaultStats(cfgs) {
       c.pendShares = bal ? parseInt(bal, 16) / 1e18 : null;
     } catch (e) { c.pendShares = null; }
     const p = px(c), pendUsd = c.pendShares != null ? c.pendShares * p : null;
+    const eth = c.unit === "ETH" && c.price;
+    const toU = u => u == null ? "—" : (eth ? fmtEth(u / c.price) : fmt$(u));
     c._base = [
-      { k: "TVL", v: fmt$(c.tvl), d: c.apy != null ? c.apy.toFixed(2) + "% APY 14d" : "" },
-      { k: "Share price", v: p ? "$" + p.toFixed(2) : "—", d: c.lp7 != null ? (c.lp7 >= 0 ? "+" : "") + c.lp7.toFixed(3) + "% 7d" : "" },
-      { k: "Withdraw queue", v: pendUsd != null ? fmt$(pendUsd) : "—", d: pendUsd != null ? (c.tvl ? (pendUsd / c.tvl * 100).toFixed(2) : "?") + "% of TVL · " + c.pendShares.toFixed(0) + " shares" : "burn-at-request" },
+      { k: "TVL", v: toU(c.tvl), d: c.apy != null ? c.apy.toFixed(2) + "% APY 7d" : "" },
+      { k: "Share price", v: p ? (eth ? (p / c.price).toFixed(4) + " ETH" : "$" + p.toFixed(2)) : "—", d: c.lp7 != null ? (c.lp7 >= 0 ? "+" : "") + c.lp7.toFixed(3) + "% 7d" : "" },
+      { k: "Withdraw queue", v: toU(pendUsd), d: pendUsd != null ? (c.tvl ? (pendUsd / c.tvl * 100).toFixed(2) : "?") + "% of TVL · " + c.pendShares.toFixed(0) + " shares" : "burn-at-request" },
       { k: "Idle buffer", v: c.idle != null ? c.idle.toFixed(1) + "%" : "—", d: "vs " + c.redeemInt + " redeem interval" },
       { k: "Last oracle report", v: c.reportAge != null ? c.reportAge.toFixed(1) + "h ago" : "—", d: "20h min cadence · fees accrue at report" },
     ];
@@ -796,18 +799,20 @@ async function loadVaultStats(cfgs) {
     $(c.el).innerHTML = statCard([...c._base, ...c._flowPlaceholder]);
   }
   setStatus("On-chain flows", "wait", "queue+price ok");
-  // Phase 2 — heavier 7d flow scan, sequential across vaults to spread RPC load.
+  // Phase 2 heavier 7d flow scan, sequential across vaults to spread RPC load.
   let anyFlow = false;
   for (const c of cfgs) {
     try {
       const blk = parseInt(await rpcOn(HEAD_RPCS, "eth_blockNumber", []), 16);
       const f = await tokenFlows7d(c.token, blk);
       const p = px(c), dep = f.mint * p, wdr = f.burn * p, net = dep - wdr;
+      const eth = c.unit === "ETH" && c.price;
+      const toU = u => eth ? fmtEth(u / c.price) : fmt$(u);
       const cov = f.coverage < 0.99 ? ` · ${Math.round(f.coverage * 100)}% of window` : "";
       const flow = [
-        { k: "Deposits settled 7d", v: fmt$(dep), d: f.mint.toFixed(0) + " shares minted (net of fees)" + cov },
-        { k: "Withdrawals settled 7d", v: fmt$(wdr), d: f.burn.toFixed(0) + " shares burned" + cov },
-        { k: "Net flow 7d", v: (net >= 0 ? "+" : "−") + fmt$(Math.abs(net)), cls: net >= 0 ? "pos" : "neg", d: "settled at oracle reports" + cov },
+        { k: "Deposits settled 7d", v: toU(dep), d: f.mint.toFixed(0) + " shares minted (net of fees)" + cov },
+        { k: "Withdrawals settled 7d", v: toU(wdr), d: f.burn.toFixed(0) + " shares burned" + cov },
+        { k: "Net flow 7d", v: (net >= 0 ? "+" : "−") + toU(Math.abs(net)), cls: net >= 0 ? "pos" : "neg", d: "settled at oracle reports" + cov },
       ];
       $(c.el).innerHTML = statCard([...c._base, ...flow]);
       if (f.coverage > 0) anyFlow = true;
@@ -853,7 +858,7 @@ function riskOf(r, vault) {
 }
 function renderRwa(statById, usdBench) {
   const rows = RWA.map(r => ({ ...r, s: statById(r.id) })).filter(r => r.s);
-  // tiles: one per tier — median live APY + count + aggregate TVL
+  // tiles: one per tier median live APY + count + aggregate TVL
   const tierAgg = {};
   rows.forEach(r => { (tierAgg[r.tier] = tierAgg[r.tier] || []).push(r); });
   $("rwaTiles").innerHTML = ["tbill", "credit", "frontier"].filter(t => tierAgg[t]).map(t => {
@@ -1002,6 +1007,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const ethTvl = mEth ? (mEth.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / Math.pow(10, +(a.tvl?.usd_decimals ?? 8)), 0) : null;
   const usdTvl = mUsd ? (mUsd.d.allocations || []).reduce((s, a) => s + (+a.tvl?.usd || 0) / Math.pow(10, +(a.tvl?.usd_decimals ?? 8)), 0) : null;
   const ethApy = mEth ? mEth.apy : null, usdApy = mUsd ? mUsd.apy : null;
+  const ethPrice = (() => { try { const al = mEth.d.allocations, u = al.reduce((s,a)=>s+(+a.tvl.usd)/Math.pow(10,a.tvl.usd_decimals),0), e = al.reduce((s,a)=>s+(+a.tvl.amount)/Math.pow(10,a.tvl.decimals),0); return e ? u/e : null; } catch (x) { return null; } })();
   const sSteth = stat("Lido stETH"), sSusds = stat("Sky sUSDS (SSR)");
   const ethBenchLive = stethApr != null || !!sSteth;
   const ETH_BENCH = stethApr ?? (sSteth ? sSteth.apy : 2.2);
@@ -1012,7 +1018,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     .map(([n, c]) => ({ name: n, ...stat(n), tag: c.tag, peer: !!c.peer }));
   const ethRows = mkRows("eth"), usdRows = mkRows("usd");
   // ether.fi Liquid: use the vault's own curator API (Seven Seas) net APY, not DefiLlama's
-  // base-only figure — DefiLlama excludes rewards and understates it.
+  // base-only figure DefiLlama excludes rewards and understates it.
   const sevenNet = k => { try { const r = seven[k].Response, b = r.global_apy_breakdown || {};
     const v = b.real_apy != null ? b.real_apy : r.apy; return v != null ? v * 100 : null; } catch (e) { return null; } };
   [["eth", "ether.fi Liquid ETH", ethRows], ["usd", "ether.fi Liquid USD", usdRows]].forEach(([k, nm, rows]) => {
@@ -1026,7 +1032,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   if (ethApy != null) ethRows.push({ name: "Lido EarnETH", apy: ethApy, m30: mEth ? mEth.apy30 : null, sigma: null, tvl: ethTvl || 0, tag: "meta-vault · levered loops", lido: true });
   if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: mUsd ? mUsd.apy30 : null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
   ethRows.sort((a, b) => b.apy - a.apy); usdRows.sort((a, b) => b.apy - a.apy);
-  // ticker ribbon — the live rates that price the whole board
+  // ticker ribbon the live rates that price the whole board
   const tick = [];
   const tk = (l, v, sfx) => { if (v != null && isFinite(v)) tick.push(`<span>${l}<b>${v.toFixed(2)}${sfx || "%"}</b></span>`); };
   if (ethBenchLive) tk("stETH APY", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
@@ -1035,7 +1041,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   tk("EarnETH", ethApy); tk("EarnUSD", usdApy);
   $("ticker").innerHTML = tick.join("");
   renderRwa(statById, USD_BENCH);
-  // headline stat row — the four numbers that matter, before any table
+  // headline stat row the four numbers that matter, before any table
   const ethPeerMed = median(ethRows.filter(r => r.peer).map(r => r.apy));
   const usdPeerMed = median(usdRows.filter(r => r.peer).map(r => r.apy));
   const tiles = [];
@@ -1051,7 +1057,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   if (usdApy != null)
     tiles.push({ k: "EarnUSD TVL", v: fmt$(usdTvl || 0), d: "live vault TVL" });
   $("tiles").innerHTML = tiles.length ? tiles.map(t => `<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join("")
-    : '<div class="skel">Mellow API unavailable — Earn tiles hidden.</div>';
+    : '<div class="skel">Mellow API unavailable Earn tiles hidden.</div>';
 
   // bars + tables (bars and rows click through to each vault's live allocation)
   SEVEN = seven;
@@ -1060,7 +1066,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS " + USD_BENCH.toFixed(2) + "%" }], $("usdTable")); }
 
   // trends (last 90d slices)
-  // med3: single-day share-price sampling spikes (reward harvests) read as noise — median-filter them out
+  // med3: single-day share-price sampling spikes (reward harvests) read as noise median-filter them out
   const med3 = pts => !pts ? pts : pts.map((p, i) => {
     if (i === 0 || i === pts.length - 1) return p;
     const w = [pts[i-1].v, p.v, pts[i+1].v].sort((a, b) => a - b);
@@ -1096,7 +1102,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       { label: "SOFR rate", col: BASELINE_COL, dash: true, pts: trendPts("Sky sUSDS (SSR)") },
     ], earnUsdSeries ? null : (usdApy != null ? { v: usdApy, label: `EarnUSD ${usdApy.toFixed(1)}%` } : null));
 
-  // Earn allocations — ctx prices each position from live market rates
+  // Earn allocations ctx prices each position from live market rates
   const auxApy = n => { const s = stat(n); return s ? s.apy : null; };
   const ctx = {
     borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy,
@@ -1105,19 +1111,19 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   };
   let ethRowsA = null, usdRowsA = null;
   if (mEth) {
-    $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
+    $("earnEthHead").innerHTML = `EarnETH · ${ethTvl && ethPrice ? fmtEth(ethTvl / ethPrice) : (ethTvl ? fmt$(ethTvl) : "?")} · ${ethApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
     sparkline($("earnEthSpark"), (earnEthSeries && earnEthSeries.length > 8 ? earnEthSeries : (mEth.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     ethRowsA = flattenAllocations(mEth.d);
     renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
     renderLenses("lensEth", ethRowsA, "eth");
-  } else { $("earnEthHead").textContent = "EarnETH — Mellow API unavailable"; $("lensEth").innerHTML = ""; }
+  } else { $("earnEthHead").textContent = "EarnETH Mellow API unavailable"; $("lensEth").innerHTML = ""; }
   if (mUsd) {
-    $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
+    $("earnUsdHead").innerHTML = `EarnUSD ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
     sparkline($("earnUsdSpark"), (earnUsdSeries && earnUsdSeries.length > 8 ? earnUsdSeries : (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     usdRowsA = flattenAllocations(mUsd.d);
     renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
     renderLenses("lensUsd", usdRowsA, "usd");
-  } else { $("earnUsdHead").textContent = "EarnUSD — Mellow API unavailable"; $("lensUsd").innerHTML = ""; }
+  } else { $("earnUsdHead").textContent = "EarnUSD Mellow API unavailable"; $("lensUsd").innerHTML = ""; }
   // leverage assumption control re-renders both allocation tables from cached data (no refetch)
   refreshAllocYields = () => {
     if (ethRowsA) renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
@@ -1134,9 +1140,9 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const idleOf = rows => { if (!rows) return null; const r = (rows.full || rows).find(x => x.cat === "idle"); return r ? r.pct : 0; };
   const ageOf = m => m && m.d && m.d.apyLastUpdate ? (Date.now() / 1e3 - +m.d.apyLastUpdate) / 3600 : null;
   loadVaultStats([
-    { el: "vstatsEth", token: "0xBBFC8683C8fE8cF73777feDE7ab9574935fea0A4", tvl: ethTvl, apy: ethApy,
+    { el: "vstatsEth", token: "0xBBFC8683C8fE8cF73777feDE7ab9574935fea0A4", tvl: ethTvl, apy: ethApy, unit: "ETH", price: ethPrice,
       shares: sharesOf(hEth), lp7: lp7(hEth), idle: idleOf(ethRowsA), reportAge: ageOf(mEth), redeemInt: "24h" },
-    { el: "vstatsUsd", token: "0x4Ce1ac8F43E0E5BD7A346A98aF777bF8fbeA1981", tvl: usdTvl, apy: usdApy,
+    { el: "vstatsUsd", token: "0x4Ce1ac8F43E0E5BD7A346A98aF777bF8fbeA1981", tvl: usdTvl, apy: usdApy, unit: "USD",
       shares: sharesOf(hUsd), lp7: lp7(hUsd), idle: idleOf(usdRowsA), reportAge: ageOf(mUsd), redeemInt: "48h" },
   ]);
 
@@ -1154,7 +1160,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   };
 })();
 
-// loop-leverage segmented control (Feature B) — recomputes the yield column live, no refetch
+// loop-leverage segmented control (Feature B) recomputes the yield column live, no refetch
 $("levSeg").querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
   const v = btn.dataset.l === "m" ? "m" : +btn.dataset.l;
   if (v === LOOP_LEV) return;

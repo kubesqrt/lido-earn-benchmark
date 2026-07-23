@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Lido Earn — Daily Deposit &amp; Withdrawal Flows</title>
+<title>Lido Earn Daily Deposit &amp; Withdrawal Flows</title>
 <style>
   /* ---- design tokens (shared across index / flows / positions / architecture) ---- */
   :root {
@@ -129,7 +129,7 @@
     <span class="ctl-lbl" style="margin-left:8px">Denomination</span>
     <div class="seg" id="denSeg">
       <button data-d="usd" class="on">USD</button>
-      <button data-d="native">native (ETH / USDC)</button>
+      <button data-d="native">ETH / USDC</button>
     </div>
     <span id="winNote" style="font:400 11.5px/1 var(--sans); color:var(--muted)"></span>
   </div>
@@ -142,7 +142,7 @@
 
   <h2>Method</h2>
   <p class="meth">
-    Mint from <code>0x0</code> = settled deposit (fee mints to the treasury excluded). Burn to <code>0x0</code> = the redeem queue settling &mdash; settlements are batch transactions executed by vault operations, so they say nothing about who redeemed. Requester-level flow comes from share transfers into the queue; depositor-level from mint forwarding. Shares are valued at the current share price. Logs pulled client-side in &le;9,900-block chunks from public RPCs; a coverage figure appears if any range failed. Numbers exclude requests still pending in the queue.
+    Mint from <code>0x0</code> = settled deposit (fee mints to the treasury excluded). Burn to <code>0x0</code> = the redeem queue settling settlements are batch transactions executed by vault operations, so they say nothing about who redeemed. Requester-level flow comes from share transfers into the queue; depositor-level from mint forwarding. Shares are valued at the current share price. Logs pulled client-side in &le;9,900-block chunks from public RPCs; a coverage figure appears if any range failed. Numbers exclude requests still pending in the queue.
   </p>
 
   <footer>
@@ -165,6 +165,7 @@ const LOG_RPCS  = ["https://gateway.tenderly.co/public/mainnet", "https://eth.dr
 const HEAD_RPCS = ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"];
 const CHUNK = 9900, BIG_PCT = 0.01;                      // settlement >=1% of TVL = large
 let WIN = 30, DEN = "usd";
+let ETHPRICE = null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function withTimeout(ms) {
@@ -266,7 +267,7 @@ function barChart(series, price, unit) {
   const W = 960, H = 250, mL = 8, mR = 8, mT = 18, mB = 24;
   const plotW = W - mL - mR, plotH = H - mT - mB, n = series.length;
   const useUsd = DEN === "usd" && price > 0;
-  const toV = s => useUsd ? s * price : s;
+  const toV = s => useUsd ? s * price : (unit === "ETH" && ETHPRICE ? s * price / ETHPRICE : (price > 0 ? s * price : s));
   const ins = series.map(d => toV(d.dep));
   const outs = series.map(d => toV(d.routine) + toV(d.big));
   const maxAbs = Math.max(1e-9, ...ins, ...outs);
@@ -300,7 +301,7 @@ function renderVault(key, cfg, data, price, tvl, pend) {
   const unit = cfg.native, days = data.series.length;
   const usdOK = !!(price && tvl);
   const useUsd = usdOK && DEN === "usd";
-  const toV = s => useUsd ? s * price : s;
+  const toV = s => useUsd ? s * price : (cfg.native === "ETH" && ETHPRICE ? s * price / ETHPRICE : (usdOK ? s * price : s));
   const money = (v, u) => useUsd ? fmtUsd(v) : fmtNative(v, u);
   const ins = data.series.map(d => toV(d.dep));
   const routs = data.series.map(d => toV(d.routine));
@@ -338,9 +339,9 @@ function renderVault(key, cfg, data, price, tvl, pend) {
   // one-line buffer read
   const buf5 = 0.05 * (tvl || 0);
   const note = !usdOK
-    ? `<p class="flownote">Mellow API unreachable — USD valuation and TVL-relative analysis disabled; flows shown in ${unit} share units.</p>`
+    ? `<p class="flownote">Mellow API unreachable USD valuation and TVL-relative analysis disabled; flows shown in ${unit} share units.</p>`
     : biggest
-    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement — <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL)</b> — which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
+    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL)</b> which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
     : `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. No settlement exceeded 1% of TVL in this window.</p>`;
 
   const rows = data.series.map((d, i) => {
@@ -352,7 +353,7 @@ function renderVault(key, cfg, data, price, tvl, pend) {
   }).reverse().join("");
 
   return `<div class="card" data-key="${key}">
-      <div class="cardhead">${cfg.name}<small>settled flows, ${WIN}d${cov}</small><span class="tvl">${usdOK ? `TVL ${fmtUsd(tvl)} · $${price.toFixed(price<10?2:0)}/share` : `<span style="color:var(--warn)">Mellow API unavailable — native units, no TVL classification</span>`}</span></div>
+      <div class="cardhead">${cfg.name}<small>settled flows, ${WIN}d${cov}</small><span class="tvl">${usdOK ? `TVL ${fmtUsd(tvl)} · $${price.toFixed(price<10?2:0)}/share` : `<span style="color:var(--warn)">Mellow API unavailable native units, no TVL classification</span>`}</span></div>
       ${tiles}
       <div class="legend"><span><i style="background:var(--in)"></i>deposits</span>${usdOK ? `<span><i style="background:var(--out)"></i>settlements &lt;1% TVL</span><span><i style="background:var(--block)"></i>settlements ≥1% TVL</span>` : `<span><i style="background:var(--out)"></i>settlements</span>`}</div>
       <div class="scroll" id="chart-${key}">${barChart(data.series, price, unit)}</div>
@@ -366,7 +367,7 @@ function renderVault(key, cfg, data, price, tvl, pend) {
 function wireChart(key, cfg, series, price) {
   const el = $("chart-" + key); if (!el) return;
   const useUsd = DEN === "usd" && price > 0;
-  const unit = cfg.native, toV = s => useUsd ? s * price : s;
+  const unit = cfg.native, toV = s => useUsd ? s * price : (cfg.native === "ETH" && ETHPRICE ? s * price / ETHPRICE : (price > 0 ? s * price : s));
   const money = (v, u) => useUsd ? fmtUsd(v) : fmtNative(v, u);
   el.querySelectorAll(".hit").forEach(h => {
     h.addEventListener("mousemove", e => {
@@ -393,12 +394,13 @@ async function priceAndTvl(cfg) {
   const pendHex = await rpcOn(HEAD_RPCS, "eth_call", [{ to: cfg.token, data: "0x70a08231" + "0".repeat(24) + cfg.token.slice(2).toLowerCase() }, "latest"]);
   const pend = pendHex ? parseInt(pendHex, 16) / 1e18 : null;
   const shares = supHex ? parseInt(supHex, 16) / 1e18 : null;
-  let tvl = null;
+  let tvl = null, ethPrice = null;
   try {
     const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`, { signal: withTimeout(10000) })).json();
     tvl = d.allocations.reduce((s, a) => s + (+a.tvl.usd) / Math.pow(10, a.tvl.usd_decimals), 0);
+    if (cfg.native === "ETH") { const e = d.allocations.reduce((s, a) => s + (+a.tvl.amount) / Math.pow(10, a.tvl.decimals), 0); ethPrice = e ? tvl / e : null; }
   } catch (e) {}
-  return { price: (shares && tvl) ? tvl / shares : null, tvl: tvl || null, pend };
+  return { price: (shares && tvl) ? tvl / shares : null, tvl: tvl || null, pend, ethPrice };
 }
 function dayMeta(headTs, dayAgo) {
   const d = new Date((headTs - dayAgo * 86400) * 1000);
@@ -419,7 +421,7 @@ async function buildFocusNote(data, price, tvl, unit) {
   const depV = data.depBy[topA] || 0;
   return `<div class="focus"><b>Concentration:</b> one ${kind === "EOA" ? "wallet (EOA)" : "contract"} <code>${shortA(topA)}</code> accounts for <b>${Math.round(shareOf*100)}%</b> of redemption requests this window` +
     (depV > 0 && price ? ` and <b>${fmtUsd(depV*price)}</b> of deposits` : "") +
-    `. Outflow risk here is a single counterparty, not a distribution — the case for knowing the holder and putting notice terms on large tickets.</div>`;
+    `. Outflow risk here is a single counterparty, not a distribution the case for knowing the holder and putting notice terms on large tickets.</div>`;
 }
 
 async function run() {
@@ -430,7 +432,7 @@ async function run() {
   $("winNote").textContent = WIN >= 60 ? "60d ~ 90 log calls; may show partial coverage" : "";
 
   const headHex = await rpcOn(HEAD_RPCS, "eth_blockNumber", []);
-  if (!headHex) { $("vaults").innerHTML = `<div class="skel" style="color:var(--crit)">Could not reach any RPC — check the connection and reload.</div>`; setStatus("RPC","err","unreachable"); return; }
+  if (!headHex) { $("vaults").innerHTML = `<div class="skel" style="color:var(--crit)">Could not reach any RPC check the connection and reload.</div>`; setStatus("RPC","err","unreachable"); return; }
   const headBlk = parseInt(headHex, 16);
   const headObj = await rpcOn(HEAD_RPCS, "eth_getBlockByNumber", [headHex, false]);
   const headTs = headObj ? parseInt(headObj.timestamp, 16) : Math.floor(Date.now() / 1000);
@@ -443,6 +445,7 @@ async function run() {
   CACHE = { headBlk, headTs, secPerBlk, vaults: {} };
   const pt = {};
   for (const key of Object.keys(SHARE)) pt[key] = await priceAndTvl(SHARE[key]);
+  ETHPRICE = pt.eth ? pt.eth.ethPrice : null;
   setStatus("Mellow", "ok", "price/tvl ok");
 
   $("vaults").innerHTML = Object.keys(SHARE).map(k => `<div id="slot-${k}"><div class="card"><div class="cardhead">${SHARE[k].name}<small>scanning ${WIN}d…</small></div><div class="skel">reading mint/burn events…</div></div></div>`).join("");
