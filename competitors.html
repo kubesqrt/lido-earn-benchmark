@@ -998,7 +998,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const USD_BENCH = sSusds ? sSusds.apy : 3.6;
 
   const mkRows = grp => Object.entries(POOL_IDS)
-    .filter(([n, c]) => c.grp === grp && stat(n))
+    .filter(([n, c]) => c.grp === grp && c.peer && stat(n))
     .map(([n, c]) => ({ name: n, ...stat(n), tag: c.tag, peer: !!c.peer }));
   const ethRows = mkRows("eth"), usdRows = mkRows("usd");
   // ether.fi Liquid: use the vault's own curator API (Seven Seas) net APY, not DefiLlama's
@@ -1046,8 +1046,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   // bars + tables (bars and rows click through to each vault's live allocation)
   SEVEN = seven;
   HIST = hist;
-  if (ethRows.length) { compTable($("ethTable"), ethRows, ETH_BENCH); barChart($("ethBars"), ethRows, [{ v: ETH_BENCH, label: "stETH" }], $("ethTable")); }
-  if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [{ v: USD_BENCH, label: "sUSDS " + USD_BENCH.toFixed(2) + "%" }], $("usdTable")); }
+  if (ethRows.length) { compTable($("ethTable"), ethRows, ETH_BENCH); barChart($("ethBars"), ethRows, [], $("ethTable")); }
+  if (usdRows.length) { compTable($("usdTable"), usdRows, USD_BENCH); barChart($("usdBars"), usdRows, [], $("usdTable")); }
 
   // trends (last 90d slices)
   // med3: single-day share-price sampling spikes (reward harvests) read as noise median-filter them out
@@ -1076,14 +1076,12 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       { label: "Lido EarnETH", col: "var(--accent)", w: 2, pts: earnEthSeries },
       { label: "ether.fi Liquid ETH", col: "var(--violet)", pts: trendPts("ether.fi Liquid ETH") },
       { label: "Steakhouse ETH (Morpho)", col: "var(--yellow)", pts: trendPts("Steakhouse ETH (Morpho)") },
-      { label: "Staking yield", col: BASELINE_COL, dash: true, pts: trendPts("Lido stETH") },
     ], earnEthSeries ? null : (ethApy != null ? { v: ethApy, label: `EarnETH ${ethApy.toFixed(1)}%` } : null));
   lineChart($("usdTrend"), $("usdTrendLegend"), [
       { label: "Lido EarnUSD", col: "var(--accent)", w: 2, pts: earnUsdSeries },
       { label: "ether.fi Liquid USD", col: "var(--violet)", pts: trendPts("ether.fi Liquid USD") },
       { label: "Smokehouse USDC", col: "var(--aqua)", pts: trendPts("Smokehouse USDC") },
       { label: "Gauntlet USDC Frontier", col: "var(--yellow)", pts: trendPts("Gauntlet USDC Frontier") },
-      { label: "SOFR rate", col: BASELINE_COL, dash: true, pts: trendPts("Sky sUSDS (SSR)") },
     ], earnUsdSeries ? null : (usdApy != null ? { v: usdApy, label: `EarnUSD ${usdApy.toFixed(1)}%` } : null));
 
   // Earn allocations ctx prices each position from live market rates
