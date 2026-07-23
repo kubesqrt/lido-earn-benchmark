@@ -190,7 +190,7 @@
     <div class="card"><div class="cardhead">EarnUSD</div><div id="lensUsd"><div class="skel">Loading&hellip;</div></div></div>
   </div>
   <div class="status" id="status" style="margin-top:44px"></div>
-  <footer>Live benchmark board &middot; refresh to refetch &middot; not investment advice.</footer>
+  <footer>APYs are <b>7-day trailing, net of fees</b> (Earn: Mellow time-weighted · ether.fi: Seven Seas · peers/RWA: DefiLlama · stETH: Lido 7d sMA, APR converted to APY). Borrow rates are current. Refresh to refetch · not investment advice.</footer>
 
 </div>
 <div class="tt" id="tt"></div>
@@ -321,7 +321,7 @@ function setStatus(name, state, extra) {
   statusEl.innerHTML = Object.entries(sources).map(([n, s]) =>
     `<span class="${s.state}">${n}${s.extra ? " · " + s.extra : ""}</span>`).join("");
 }
-["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH APR","Seven Seas","On-chain flows"].forEach(n => setStatus(n, "wait"));
+["DefiLlama","Borrow rates","Mellow EarnETH","Mellow EarnUSD","Lido stETH","Seven Seas","On-chain flows"].forEach(n => setStatus(n, "wait"));
 async function j(url) { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
 async function gql(query) {
   const r = await fetch("https://api.morpho.org/graphql", {
@@ -555,7 +555,7 @@ function barChart(el, rows, benchmarks, tableEl) {
   el.innerHTML = s + "</svg>";
   el.querySelectorAll(".bar").forEach(bar => {
     bar.addEventListener("mousemove", e => { const r = rows[+bar.dataset.i];
-      showTT(e, `<b>${r.name}</b>${r.apy.toFixed(2)}% now · ${r.m30 != null ? r.m30.toFixed(2) : "—"}% 30d mean<br>TVL ${fmt$(r.tvl)} · ${r.tag}<br><span style="color:var(--muted)">click for live allocation</span>`); });
+      showTT(e, `<b>${r.name}</b>${r.apy.toFixed(2)}% 7d · ${r.m30 != null ? r.m30.toFixed(2) : "—"}% 30d<br>TVL ${fmt$(r.tvl)} · ${r.tag}<br><span style="color:var(--muted)">click for live allocation</span>`); });
     bar.addEventListener("mouseleave", hideTT);
     bar.addEventListener("click", () => {
       if (!tableEl) return;
@@ -568,7 +568,7 @@ function barChart(el, rows, benchmarks, tableEl) {
   });
 }
 function compTable(el, rows, bench) {
-  let h = `<table><tr><th></th><th>Vault</th><th>Strategy</th><th class="num">APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
+  let h = `<table><tr><th></th><th>Vault</th><th>Strategy</th><th class="num">APY 7d</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
   rows.forEach((r, ri) => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
     h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td><td style="color:var(--ink-2)">${r.tag}</td>` +
@@ -696,7 +696,7 @@ function yieldEst(row, vault, ctx) {
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
     ? loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.62, net: 1.36, lt: 0.84 })
     : loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.56, net: 2.05, lt: 0.81 });
-  if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (14d TW)");
+  if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 });
   if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
     return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas); }
@@ -863,7 +863,7 @@ function renderRwa(statById, usdBench) {
   }).join("");
   const order = { tbill: 0, credit: 1, frontier: 2 };
   rows.sort((a, b) => order[a.tier] - order[b.tier] || b.s.apy - a.s.apy);
-  let h = `<table><tr><th>Asset</th><th>Tier</th><th class="num">APY</th><th class="num">30d</th><th class="num">σ90d</th><th class="num">vs sUSDS</th><th class="num">TVL</th><th>Backing</th><th>Redemption</th><th>Oracle</th></tr>`;
+  let h = `<table><tr><th>Asset</th><th>Tier</th><th class="num">APY 7d</th><th class="num">30d</th><th class="num">σ90d</th><th class="num">vs sUSDS</th><th class="num">TVL</th><th>Backing</th><th>Redemption</th><th>Oracle</th></tr>`;
   rows.forEach(r => {
     const T = RWA_TIER[r.tier], sp = r.s.apy - usdBench;
     const fl = r.flag === "crit" ? "crit" : r.flag === "warn" ? "warn" : null;
@@ -966,12 +966,14 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     .catch(() => { setStatus("Borrow rates", "err"); return {}; });
   const pMellow = key => Promise.all([
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/data`),
-    j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy`),
-  ]).then(([d, a]) => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "ok"); return { d, apy: +a.apy }; })
+    j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy?days=7`),
+    j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy?days=30`),
+  ]).then(([d, a7, a30]) => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "ok"); return { d, apy: +a7.apy, apy30: +a30.apy }; })
     .catch(e => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "err"); return null; });
-  const pSteth = j("https://eth-api.lido.fi/v1/protocol/steth/apr/last")
-    .then(r => { setStatus("Lido stETH APR", "ok", r.data.apr.toFixed(2) + "%"); return +r.data.apr; })
-    .catch(() => { setStatus("Lido stETH APR", "err"); return null; });
+  const aprToApy = apr => (Math.pow(1 + apr / 100 / 365, 365) - 1) * 100;   // stETH rebases daily
+  const pSteth = j("https://eth-api.lido.fi/v1/protocol/steth/apr/sma")
+    .then(r => { const apy = aprToApy(r.data.smaApr); setStatus("Lido stETH", "ok", apy.toFixed(2) + "% APY 7d"); return apy; })
+    .catch(() => { setStatus("Lido stETH", "err"); return null; });
   const pSeven = Promise.all(Object.entries(SEVENSEAS).map(([k, addr]) =>
     j("https://api.sevenseas.capital/etherfi/ethereum/performance/" + addr).then(r => [k, r]).catch(() => [k, null])
   )).then(entries => { const ok = entries.filter(e => e[1]).length; setStatus("Seven Seas", ok ? "ok" : "err", ok + "/2"); return Object.fromEntries(entries); });
@@ -980,8 +982,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const [hist, borrowMap, mEth, mUsd, stethApr, seven, hEth, hUsd] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, mellowHist("earnETH"), mellowHist("earnUSD")]);
 
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
-    const last = pts[pts.length - 1], last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
-    return { apy: last.v, m30: mean(last30), sigma: stdev(last90), tvl: last.tvl }; };
+    const last = pts[pts.length - 1], last7 = pts.slice(-7).map(p => p.v), last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
+    return { apy: mean(last7), m30: mean(last30), sigma: stdev(last90), tvl: last.tvl }; };
   const idToName = {}; fetchList.forEach(([n, id]) => { if (!(id in idToName)) idToName[id] = n; });
   const statById = id => stat(idToName[id]);
 
@@ -1005,13 +1007,13 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     const a = sevenNet(k), row = rows.find(r => r.name === nm);
     if (row && a != null && isFinite(a)) { row.apy = a; row.srcNet = true; }
   });
-  if (ethApy != null) ethRows.push({ name: "Lido EarnETH", apy: ethApy, m30: null, sigma: null, tvl: ethTvl || 0, tag: "meta-vault · levered loops", lido: true });
-  if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
+  if (ethApy != null) ethRows.push({ name: "Lido EarnETH", apy: ethApy, m30: mEth ? mEth.apy30 : null, sigma: null, tvl: ethTvl || 0, tag: "meta-vault · levered loops", lido: true });
+  if (usdApy != null) usdRows.push({ name: "Lido EarnUSD", apy: usdApy, m30: mUsd ? mUsd.apy30 : null, sigma: null, tvl: usdTvl || 0, tag: "meta-vault · levered Ethena/syrup", lido: true });
   ethRows.sort((a, b) => b.apy - a.apy); usdRows.sort((a, b) => b.apy - a.apy);
   // ticker ribbon — the live rates that price the whole board
   const tick = [];
   const tk = (l, v, sfx) => { if (v != null && isFinite(v)) tick.push(`<span>${l}<b>${v.toFixed(2)}${sfx || "%"}</b></span>`); };
-  if (ethBenchLive) tk("stETH APR", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
+  if (ethBenchLive) tk("stETH APY", ETH_BENCH); tk("Aave WETH borrow", borrowMap[BORROW.aaveWETH]); tk("Spark WETH borrow", borrowMap[BORROW.sparkWETH]);
   if (sSusds) tk("sUSDS", USD_BENCH);
   tk("USDe borrow", borrowMap[BORROW.usdeEth]); tk("USDT0·Plasma borrow", borrowMap[BORROW.usdt0Plasma]);
   tk("EarnETH", ethApy); tk("EarnUSD", usdApy);
@@ -1023,10 +1025,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const tiles = [];
   const sgn = (v, b) => { const s = v - b; return `<span style="color:${s >= 0 ? "var(--good)" : "var(--crit)"}">${pp(s)}</span>`; };
   if (ethApy != null)
-    tiles.push({ k: "EarnETH APY · 14d TW", v: ethApy.toFixed(2) + "%",
+    tiles.push({ k: "EarnETH APY · 7d TW", v: ethApy.toFixed(2) + "%",
       d: `vs stETH ${ETH_BENCH.toFixed(2)}% ${ethBenchLive ? "live" : "static fallback"} ${sgn(ethApy, ETH_BENCH)} · peer median ${ethPeerMed.toFixed(2)}% ${sgn(ethApy, ethPeerMed)}` });
   if (usdApy != null)
-    tiles.push({ k: "EarnUSD APY · 14d TW", v: usdApy.toFixed(2) + "%",
+    tiles.push({ k: "EarnUSD APY · 7d TW", v: usdApy.toFixed(2) + "%",
       d: `vs sUSDS ${USD_BENCH.toFixed(2)}% ${sgn(usdApy, USD_BENCH)} · peer median ${usdPeerMed.toFixed(2)}% ${sgn(usdApy, usdPeerMed)}` });
   if (ethApy != null)
     tiles.push({ k: "EarnETH TVL", v: fmt$(ethTvl || 0), d: "live vault TVL" });
@@ -1087,14 +1089,14 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   };
   let ethRowsA = null, usdRowsA = null;
   if (mEth) {
-    $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>14d time-weighted</small>`;
+    $("earnEthHead").innerHTML = `EarnETH — ${ethTvl ? fmt$(ethTvl) : "?"} · ${ethApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
     sparkline($("earnEthSpark"), (earnEthSeries && earnEthSeries.length > 8 ? earnEthSeries : (mEth.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     ethRowsA = flattenAllocations(mEth.d);
     renderAlloc("earnEthStack", "earnEthAlloc", ethRowsA, ethTvl, "eth", ctx);
     renderLenses("lensEth", ethRowsA, "eth");
   } else { $("earnEthHead").textContent = "EarnETH — Mellow API unavailable"; $("lensEth").innerHTML = ""; }
   if (mUsd) {
-    $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>14d time-weighted</small>`;
+    $("earnUsdHead").innerHTML = `EarnUSD — ${usdTvl ? fmt$(usdTvl) : "?"} · ${usdApy.toFixed(2)}% APY <small>7d time-weighted</small>`;
     sparkline($("earnUsdSpark"), (earnUsdSeries && earnUsdSeries.length > 8 ? earnUsdSeries : (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     usdRowsA = flattenAllocations(mUsd.d);
     renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
