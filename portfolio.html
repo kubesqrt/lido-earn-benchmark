@@ -299,9 +299,11 @@ const BORROW = {
 
 // ---------- helpers ----------
 const _noel = { innerHTML:"", textContent:"", style:{}, dataset:{}, classList:{add(){},remove(){},toggle(){}},
-  addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return null; }, appendChild(){},
+  addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return _noel; }, appendChild(){},
+  setAttribute(){}, removeAttribute(){}, remove(){}, insertAdjacentHTML(){}, closest(){ return null; },
   set onclick(v){}, getBoundingClientRect(){ return { width:0, height:0, left:0, top:0 }; }, scrollIntoView(){} };
 const $ = id => document.getElementById(id) || _noel;
+const _live = id => !!document.getElementById(id);   // true only when the section exists on this page
 const fmt$ = v => v >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "K";
 const pp = v => (v >= 0 ? "+" : "") + v.toFixed(2) + "pp";
 const median = a => { const s = [...a].sort((x,y) => x-y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1]+s[m])/2; };
@@ -580,7 +582,8 @@ function compTable(el, rows, bench) {
   el.querySelectorAll("tr.pick").forEach(tr => tr.addEventListener("click", () => toggleDetail(tr)));
 }
 function lineChart(el, legendEl, series, refLine) {
-  const W = 530, H = 270, padL = 40, padR = 120, padT = 14, padB = 26;
+  if (el === _noel) return;               // section not on this page
+  const W = 530, H = 270, padL = 40, padR = 22, padT = 14, padB = 26;
   series = series.filter(s => s.pts && s.pts.length > 1);
   if (!series.length) { el.innerHTML = '<p class="skel">chart data unavailable</p>'; return; }
   const n = Math.max(...series.map(s => s.pts.length));
@@ -602,15 +605,14 @@ function lineChart(el, legendEl, series, refLine) {
     const d = sr.pts.map((p, i) => (i ? "L" : "M") + x(i * (n-1) / (sr.pts.length-1)).toFixed(1) + " " + y(p.v).toFixed(1)).join("");
     s += `<path d="${d}" fill="none" stroke="${sr.col}" stroke-width="${sr.w || 1.4}"${sr.dash ? ' stroke-dasharray="5 4"' : ""} stroke-linejoin="round"/>`;
   });
-  // series labels at line end (no legend box), nudged apart when they collide
-  const ends = series.map(sr => ({ label: sr.label, col: sr.col, y: y(sr.pts[sr.pts.length-1].v) }))
-    .sort((a, b) => a.y - b.y);
-  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 12) ends[i].y = ends[i-1].y + 12;
-  ends.forEach(e2 => { s += `<text x="${W-padR+6}" y="${(e2.y+3.5).toFixed(1)}" fill="${e2.col}" font-size="10">${e2.label}</text>`; });
   s += `<rect class="hover" x="${padL}" y="${padT}" width="${W-padL-padR}" height="${H-padT-padB}" fill="transparent"/>`;
   s += `<line class="xh" y1="${padT}" y2="${H-padB}" stroke="var(--axis)" opacity="0"/></svg>`;
   el.innerHTML = s;
-  legendEl.innerHTML = refLine ? `<span><i style="background:var(--ink);height:2px"></i>${refLine.label} (live)</span>` : "";
+  const swatch = sr => sr.dash
+    ? `<i style="background:none;height:0;border-top:2px dashed ${sr.col}"></i>`
+    : `<i style="background:${sr.col};height:${(sr.w||1.4) >= 2 ? 3 : 2}px"></i>`;
+  legendEl.innerHTML = series.map(sr => `<span>${swatch(sr)}${sr.label}</span>`).join("")
+    + (refLine ? `<span>${swatch({ col: "var(--ink)", dash: true })}${refLine.label}</span>` : "");
   const svg = el.querySelector("svg"), hover = svg.querySelector(".hover"), xh = svg.querySelector(".xh");
   hover.addEventListener("mousemove", e => {
     const r = svg.getBoundingClientRect();
@@ -1042,14 +1044,14 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       { label: "Lido EarnETH", col: "var(--accent)", w: 2, pts: earnEthSeries },
       { label: "ether.fi Liquid ETH", col: "var(--violet)", pts: trendPts("ether.fi Liquid ETH") },
       { label: "Steakhouse ETH (Morpho)", col: "var(--yellow)", pts: trendPts("Steakhouse ETH (Morpho)") },
-      { label: "Lido stETH", col: BASELINE_COL, dash: true, pts: trendPts("Lido stETH") },
+      { label: "Staking yield", col: BASELINE_COL, dash: true, pts: trendPts("Lido stETH") },
     ], earnEthSeries ? null : (ethApy != null ? { v: ethApy, label: `EarnETH ${ethApy.toFixed(1)}%` } : null));
   lineChart($("usdTrend"), $("usdTrendLegend"), [
       { label: "Lido EarnUSD", col: "var(--accent)", w: 2, pts: earnUsdSeries },
       { label: "ether.fi Liquid USD", col: "var(--violet)", pts: trendPts("ether.fi Liquid USD") },
       { label: "Smokehouse USDC", col: "var(--aqua)", pts: trendPts("Smokehouse USDC") },
       { label: "Gauntlet USDC Frontier", col: "var(--yellow)", pts: trendPts("Gauntlet USDC Frontier") },
-      { label: "Sky sUSDS (SSR)", col: BASELINE_COL, dash: true, pts: trendPts("Sky sUSDS (SSR)") },
+      { label: "SOFR rate", col: BASELINE_COL, dash: true, pts: trendPts("Sky sUSDS (SSR)") },
     ], earnUsdSeries ? null : (usdApy != null ? { v: usdApy, label: `EarnUSD ${usdApy.toFixed(1)}%` } : null));
 
   // Earn allocations — ctx prices each position from live market rates
