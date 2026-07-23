@@ -7,8 +7,6 @@ import { readPage, parseRects, assertRectsInBox } from "./_pageload.mjs";
 
 const idx = readPage("index.html");
 const flows = readPage("flows.html");
-const positions = readPage("positions.html");
-const architecture = readPage("architecture.html");
 const snapshot = readPage("flows-snapshot.html");
 
 // Canonical addresses (lowercase):
@@ -45,23 +43,8 @@ test("share-token / vault addresses identical across index.html and flows.html",
   assert.equal(iUsdT[1].toLowerCase(), USD_TOKEN);
 });
 
-test("positions.html §04 tables carry the canonical e-mode triplets", () => {
-  // Slice out section 04 (last section of the page).
-  const at = positions.indexOf('<span class="idx">04</span>');
-  assert.ok(at > -1, "section 04 heading not found");
-  const s04 = positions.slice(at);
-  // Aave Core e-mode rows: LTV 93 / LT 95 (two rows: ETH-correlated + rsETH/wstETH/ETHx)
-  const aave = s04.match(/Aave Core · E-mode[^\n]*?<td class="num">93%<\/td><td class="num">95%<\/td>/g) || [];
-  assert.equal(aave.length, 2, 'expected two Aave Core "93% / 95%" e-mode rows in §04');
-  // Spark cat.1: 92 / 93
-  assert.match(s04, /Spark · E-mode cat\.1[^\n]*?<td class="num">92%<\/td><td class="num">93%<\/td>/);
-  // Aave-Plasma syrupUSDT stablecoin e-mode: 90 / 92
-  assert.match(s04, /Aave-Plasma · syrupUSDT stablecoin e-mode<\/td><td class="num">90%<\/td><td class="num">92%<\/td>/);
-});
-
 test("fee description is consistent everywhere fees are mentioned", () => {
-  const pages = { "index.html": idx, "flows.html": flows, "positions.html": positions,
-                  "architecture.html": architecture, "flows-snapshot.html": snapshot };
+  const pages = { "index.html": idx, "flows.html": flows, "flows-snapshot.html": snapshot };
   // Any "<N>% management/mgmt" must be 1; any "<N>% [high-watermark] performance/perf" must be 10.
   const mgmtRe = /(\d+(?:\.\d+)?)\s*%(?:\/yr)?\s*(?:management|mgmt)/gi;
   const perfRe = /(\d+(?:\.\d+)?)\s*%\s*(?:high-watermark\s+)?(?:performance|perf\b)/gi;
@@ -74,13 +57,6 @@ test("fee description is consistent everywhere fees are mentioned", () => {
     if (html.match(mgmtRe) || html.match(perfRe))
       assert.match(html, /high[- ]watermark/i, `${name} states fees without high-watermark`);
   }
-  // The two pages that spell the fee out must both carry the canonical structure.
-  assert.ok(positions.includes("1% management + 10% performance over a high-watermark"),
-    "positions.html fee sentence changed");
-  assert.match(architecture, /1%\/yr time-based \+ 10% high-watermark performance/,
-    "architecture.html FeeManager description changed");
-  assert.match(architecture, /1%\/yr pro-rata \+ 10% of gains above high-watermark/,
-    "architecture.html fee-flow step changed");
 });
 
 test("flows-snapshot.html: frozen banner, clean text, in-box SVGs, no external URLs", () => {

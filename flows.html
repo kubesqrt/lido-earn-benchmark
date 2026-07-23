@@ -113,7 +113,7 @@
       <h1>Daily flows</h1>
     </div>
     <div class="mast-right">
-      <nav class="nav"><a href="index.html">Board</a><span class="here">Daily flows</span><a href="positions.html">Position atlas</a><a href="architecture.html">Architecture</a></nav>
+      <nav class="nav"><a href="index.html">Board</a><span class="here">Daily flows</span></nav>
       <div class="asof"><b id="asof">loading&hellip;</b></div>
     </div>
   </div>
@@ -146,7 +146,7 @@
   </p>
 
   <footer>
-    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">board</a> &middot; <a href="positions.html">position atlas</a> &middot; <a href="architecture.html">architecture</a>.
+    Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion page: <a href="index.html">board</a>.
   </footer>
 </div>
 <div class="tt" id="tt"></div>
@@ -296,7 +296,7 @@ function barChart(series, price, unit) {
   return s;
 }
 
-function renderVault(key, cfg, data, price, tvl) {
+function renderVault(key, cfg, data, price, tvl, pend) {
   const unit = cfg.native, days = data.series.length;
   const usdOK = !!(price && tvl);
   const useUsd = usdOK && DEN === "usd";
@@ -317,6 +317,7 @@ function renderVault(key, cfg, data, price, tvl) {
     `<div class="tile usual"><div class="k">Median settlement</div><div class="v out">${money(sr.activeMedian, unit)}</div><div class="d">${sr.active} routine settlements · largest ${money(sr.activeMax, unit)}</div></div>` +
     `<div class="tile usual"><div class="k">Median deposit day</div><div class="v inn">${money(si.activeMedian, unit)}</div><div class="d">${si.active}/${days} days with deposits</div></div>` +
     `<div class="tile net"><div class="k">Net flow · ${WIN}d</div><div class="v ${sn.total>=0?'pos':'neg'}">${sn.total>=0?'+':'−'}${money(Math.abs(sn.total), unit)}</div><div class="d">in ${money(si.total, unit)} · out ${money(so.total, unit)}</div></div>` +
+    `<div class="tile"><div class="k">In withdrawal queue now</div><div class="v">${pend != null ? money(toV(pend), unit) : "—"}</div><div class="d">${pend != null && usdOK ? pctTvl(pend).toFixed(2) + "% of TVL · settles at the next report" : "pending redemption requests"}</div></div>` +
     (biggest
       ? `<div class="tile block"><div class="k">Largest settlement</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d">${pctTvl(biggest.shares).toFixed(1)}% of TVL · ${(data.series[data.series.length - 1 - biggest.day] || {}).full || ""}</div></div>`
       : `<div class="tile block"><div class="k">Settlements ≥1% TVL</div><div class="v">${usdOK ? "0" : "—"}</div><div class="d">${usdOK ? "none in window" : "needs the TVL feed"}</div></div>`) +
@@ -389,13 +390,15 @@ let CACHE = null;
 
 async function priceAndTvl(cfg) {
   const supHex = await rpcOn(HEAD_RPCS, "eth_call", [{ to: cfg.token, data: "0x18160ddd" }, "latest"]);
+  const pendHex = await rpcOn(HEAD_RPCS, "eth_call", [{ to: cfg.token, data: "0x70a08231" + "0".repeat(24) + cfg.token.slice(2).toLowerCase() }, "latest"]);
+  const pend = pendHex ? parseInt(pendHex, 16) / 1e18 : null;
   const shares = supHex ? parseInt(supHex, 16) / 1e18 : null;
   let tvl = null;
   try {
     const d = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/data`, { signal: withTimeout(10000) })).json();
     tvl = d.allocations.reduce((s, a) => s + (+a.tvl.usd) / Math.pow(10, a.tvl.usd_decimals), 0);
   } catch (e) {}
-  return { price: (shares && tvl) ? tvl / shares : null, tvl: tvl || null };
+  return { price: (shares && tvl) ? tvl / shares : null, tvl: tvl || null, pend };
 }
 function dayMeta(headTs, dayAgo) {
   const d = new Date((headTs - dayAgo * 86400) * 1000);
@@ -455,8 +458,8 @@ async function run() {
     }
     const data = { series, bigEvents: d.bigEvents, reqBy: d.reqBy, depBy: d.depBy, coverage: d.coverage };
     data.focusNote = await buildFocusNote(data, price, tvl, cfg.native);
-    CACHE.vaults[key] = { data, price, tvl };
-    $("slot-" + key).innerHTML = renderVault(key, cfg, data, price, tvl);
+    CACHE.vaults[key] = { data, price, tvl, pend: pt[key].pend };
+    $("slot-" + key).innerHTML = renderVault(key, cfg, data, price, tvl, pt[key].pend);
     wireChart(key, cfg, series, price);
     if (d.coverage > 0) anyOk = true;
   }
@@ -467,7 +470,7 @@ function rerender() {
   if (!CACHE) return;
   for (const key of Object.keys(SHARE)) {
     const v = CACHE.vaults[key]; if (!v) continue;
-    $("slot-" + key).innerHTML = renderVault(key, SHARE[key], v.data, v.price, v.tvl);
+    $("slot-" + key).innerHTML = renderVault(key, SHARE[key], v.data, v.price, v.tvl, v.pend);
     wireChart(key, SHARE[key], v.data.series, v.price);
   }
 }
