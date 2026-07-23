@@ -95,6 +95,9 @@
   .dpanel table { margin-top: 8px; font-size: 12.5px; max-width: 640px; }
   .dpanel td, .dpanel th { padding: 5px 10px; }
   .dpanel .dfoot { margin-top: 9px; font-size: 12px; }
+  table.alloc td, table.alloc th { white-space: normal; }
+  table.alloc td.num, table.alloc th.num { white-space: nowrap; }
+  .sub2 { color: var(--muted); font-size: 11px; }
   .levctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 12px; color: var(--ink-2); }
   .levctl .lbl { font-size: 12px; color: var(--ink-2); font-weight: 500; }
   .levctl .hint { color: var(--muted); font-size: 11.5px; }
@@ -671,15 +674,15 @@ function yieldEst(row, vault, ctx) {
   const loop = (s, sLbl, bb, bLbl, meas) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas };
   // measured on-chain 2026-07-18 (overnight/actual-leverage.md): {L, net APY %, note}
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15 })
-    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27 });
-  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92 });
+    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15, lt: 0.93 })
+    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 });
+  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 });
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.62, net: 1.36 })
-    : loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.56, net: 2.05 });
+    ? loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.62, net: 1.36, lt: 0.84 })
+    : loop(ctx.earnUsd, "USD yield (≈earnUSD)", b("usdeEth"), "USDe borrow (93% of debt, measured)", { L: 1.56, net: 2.05, lt: 0.81 });
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (14d TW)");
-  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30 });
-  if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, note: "excl. Merit/sats" };
+  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 });
+  if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
     return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
   if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
@@ -882,6 +885,23 @@ function renderLenses(elId, rows, vault) {
     seg.addEventListener("mouseleave", hideTT);
   });
 }
+// display label: drop the repeated subvault suffix; mute the earnUSDc/e tag
+function posLabel(r) {
+  return r.label.replace(/ · Lido stRATEGY$/i, "")
+                .replace(/ · (earnUSD[ce])$/i, ' <span class="sub2">$1</span>');
+}
+// risk cell: health factor for levered positions (HF = LT·L/(L−1)); otherwise the flag
+function riskCell(y, r, vault) {
+  if (y && y.meas && y.meas.lt) {
+    const { L, lt } = y.meas, hf = lt * L / (L - 1), buf = 1 - ((L - 1) / L) / lt;
+    const col = hf < 1.05 ? "var(--crit)" : hf < 1.15 ? "var(--warn)" : "var(--ink-2)";
+    const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = <b style="display:inline">${hf.toFixed(3)}</b>` +
+      `<br>liquidates on a −${(buf * 100).toFixed(0)}% collateral-vs-debt move`;
+    return `<span class="yld" style="color:${col}" data-tip="${tip}">HF ${hf.toFixed(2)}</span>`;
+  }
+  const f = flagFor(r, vault);
+  return f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "";
+}
 function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stack = $(stackId);
   stack.innerHTML = rows.map((r, i) =>
@@ -891,12 +911,12 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       showTT(e, `<b>${r.label}</b>${r.pct.toFixed(1)}% · ${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : ""}${r.chain && r.chain !== "ethereum" ? " · " + r.chain : ""}`); });
     seg.addEventListener("mouseleave", hideTT);
   });
-  $(tableId).innerHTML = `<table><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Flag</th></tr>` +
-    rows.map((r, i) => { const f = flagFor(r, vault); const y = ctx ? yieldEst(r, vault, ctx) : null;
-      return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${r.label}</td>` +
+  $(tableId).innerHTML = `<table class="alloc"><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Risk</th></tr>` +
+    rows.map((r, i) => { const y = ctx ? yieldEst(r, vault, ctx) : null;
+      return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${posLabel(r)}</td>` +
       `<td class="num">${r.pct.toFixed(1)}%</td><td class="num">${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : "—"}</td>` +
       `<td class="num">${yieldCell(y, r.pct)}</td>` +
-      `<td>${f ? `<span class="flag ${f[0]}">${f[1]}</span>` : ""}</td></tr>`; }).join("") + "</table>";
+      `<td class="risk">${riskCell(y, r, vault)}</td></tr>`; }).join("") + "</table>";
   $(tableId).querySelectorAll(".yld").forEach(el => {
     el.addEventListener("mousemove", e => showTT(e, `<b>${el.textContent}</b>${el.dataset.tip}`));
     el.addEventListener("mouseleave", hideTT);
