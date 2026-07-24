@@ -903,7 +903,7 @@ function riskCell(y, r, vault) {
   if (y && y.meas && y.meas.lt) {
     const { L, lt } = y.meas, hf = lt * L / (L - 1), buf = 1 - ((L - 1) / L) / lt;
     const col = hf < 1.05 ? "var(--crit)" : hf < 1.15 ? "var(--warn)" : "var(--ink-2)";
-    const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = <b style="display:inline">${hf.toFixed(3)}</b>` +
+    const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = ${hf.toFixed(3)}` +
       `<br>liquidates on a −${(buf * 100).toFixed(0)}% collateral-vs-debt move`;
     return `<span class="yld" style="color:${col}" data-tip="${tip}">HF ${hf.toFixed(2)}</span>`;
   }
