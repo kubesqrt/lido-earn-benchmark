@@ -303,7 +303,8 @@ const _noel = { innerHTML:"", textContent:"", style:{}, dataset:{}, classList:{a
   addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return _noel; }, appendChild(){},
   setAttribute(){}, removeAttribute(){}, remove(){}, insertAdjacentHTML(){}, closest(){ return null; },
   set onclick(v){}, getBoundingClientRect(){ return { width:0, height:0, left:0, top:0 }; }, scrollIntoView(){} };
-const $ = id => document.getElementById(id) || _noel;
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/"/g, "&quot;") || _noel;
 const _live = id => !!document.getElementById(id);   // true only when the section exists on this page
 const fmt$ = v => v >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "K";
 const fmtEth = e => (Math.abs(e) >= 1000 ? (e/1000).toFixed(1) + "k" : Math.abs(e) >= 1 ? e.toFixed(1) : e.toFixed(4)) + " ETH";
@@ -717,7 +718,7 @@ function yieldCell(y, pct) {
   if (!y) return "—";
   if (y.kind === "rate") {
     const tip = `${y.tip}<br>≈ ${(pct * y.v / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share, unlevered)`;
-    return `<span class="yld" data-tip="${tip}">${y.v.toFixed(2)}%</span>`;
+    return `<span class="yld" data-tip="${esc(tip)}">${y.v.toFixed(2)}%</span>`;
   }
   const carry = y.s - y.b;
   if (LOOP_LEV === "m" && y.meas) {
@@ -727,14 +728,14 @@ function yieldCell(y, pct) {
       `<br>s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp/turn` +
       (m.note ? `<br>${m.note}` : "") +
       `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
-    return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${tip}">${net.toFixed(2)}% @${m.L}×</span>`;
+    return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${esc(tip)}">${net.toFixed(2)}% @${m.L}×</span>`;
   }
   const Lv = LOOP_LEV === "m" ? 3 : LOOP_LEV, net = y.s * Lv - y.b * (Lv - 1);
   const tip = `s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl}` +
     `<br>carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp per turn · assumed L = ${Lv}×` +
     `<br>net = s·L − b·(L−1) = ${net.toFixed(2)}%` +
     `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
-  return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${tip}">${net.toFixed(2)}% @${Lv}×</span>`;
+  return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${esc(tip)}">${net.toFixed(2)}% @${Lv}×</span>`;
 }
 // ---------- vault stats: on-chain flows + queue + freshness ----------
 // getLogs-capable + CORS-open free RPCs (both ~10k-block range); rotated to dodge rate limits
@@ -921,7 +922,7 @@ function riskCell(y, r, vault) {
     const col = hf < 1.05 ? "var(--crit)" : hf < 1.15 ? "var(--warn)" : "var(--ink-2)";
     const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = ${hf.toFixed(3)}` +
       `<br>liquidates on a −${(buf * 100).toFixed(0)}% collateral-vs-debt move`;
-    return `<span class="yld" style="color:${col}" data-tip="${tip}">HF ${hf.toFixed(2)}</span>`;
+    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>`;
   }
   const f = flagFor(r, vault);
   return f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "";
