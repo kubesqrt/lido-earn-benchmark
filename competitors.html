@@ -681,8 +681,8 @@ function yieldEst(row, vault, ctx) {
     : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 });
   if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 });
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, note: "levered wstETH staking; the borrowed USD funds the earnUSD leg (booked separately)" })
-    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, note: "levered wstETH staking; the borrowed USD funds the earnUSD leg (booked separately)" });
+    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." })
+    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." });
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 });
   if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
@@ -706,11 +706,12 @@ function yieldCell(y, pct) {
   const carry = y.s - y.b;
   if (LOOP_LEV === "m" && y.meas) {
     const m = y.meas;
-    const tip = `MEASURED on-chain 2026-07-18: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)` +
+    const net = m.live ? (y.s * m.L - y.b * (m.L - 1)) : m.net;   // live carry at the measured leverage
+    const tip = (m.live ? `L = ${m.L}× measured Jul-18; carry computed live from current rates` : `MEASURED on-chain 2026-07-18: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)`) +
       `<br>s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp/turn` +
       (m.note ? `<br>${m.note}` : "") +
-      `<br>≈ ${(pct * m.net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
-    return `<span class="yld${m.net < 0 ? " neg" : ""}" data-tip="${tip}">${m.net.toFixed(2)}% @${m.L}×</span>`;
+      `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
+    return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${tip}">${net.toFixed(2)}% @${m.L}×</span>`;
   }
   const Lv = LOOP_LEV === "m" ? 3 : LOOP_LEV, net = y.s * Lv - y.b * (Lv - 1);
   const tip = `s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl}` +
