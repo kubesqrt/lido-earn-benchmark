@@ -296,6 +296,7 @@ const BORROW = {
   usdt0Mantle: "47da0cdd-7b1d-4927-9545-20b53b73afa8",
   usdeEth:     "21e1ac8a-b3aa-4576-9506-0b40137721a0",
   usdePlasma:  "42eaf290-24c3-4ce0-82ab-c1276444871b",
+  morphoWETH:  "462c6f50-ceab-4235-aa0e-21ee1e345908",
 };
 
 // ---------- helpers ----------
@@ -689,27 +690,29 @@ let LOOP_LEV = "m"; // "m" = measured on-chain (default) or a numeric what-if fr
 let refreshAllocYields = () => {}; // bound in main() once data is loaded
 function yieldEst(row, vault, ctx) {
   const L = row.label, ch = (row.chain || "ethereum").toLowerCase();
-  const b = k => ctx.borrow[BORROW[k]];
+  const b = k => { const e = ctx.borrow[BORROW[k]]; return e ? e.v : null; };
   const rate = (v, tip) => v == null ? null : { kind: "rate", v, tip };
-  const loop = (s, sLbl, bb, bLbl, meas) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas };
+  const loop = (s, sLbl, bb, bLbl, meas, bK) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas, bK };
   // measured on-chain 2026-07-18 (overnight/actual-leverage.md): {L, net APY %, note}
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15, lt: 0.93 })
-    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 });
-  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 });
+    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15, lt: 0.93 }, "sparkWETH")
+    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 }, "aaveWETH");
+  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 }, "aaveWETH");
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." })
-    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." });
+    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth")
+    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth");
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
-  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 });
+  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
   if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
-    return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas); }
+    return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas, ch === "plasma" ? "usdePlasma" : "usdeEth"); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
   if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
   if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
   if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live");
   if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live");
-  if (/morpho wsteth\/weth/i.test(L)) return null;
+  if (/morpho wsteth\/weth/i.test(L)) return loop(ctx.steth, "stETH", b("morphoWETH"), "WETH borrow (Morpho 96.5% market)", null, "morphoWETH");
+  if (/twyne/i.test(L)) return ctx.ptSrusde == null ? null : rate(ctx.ptSrusde, "PT-srUSDe-22OCT26 implied fixed APY (Pendle, live) — the unlevered floor. Twyne levers this PT against USDe credit on Aave; the position\'s leverage isn\'t public, so no levered figure is shown");
+  if (/pending deposits|boringqueue/i.test(L)) return rate(0, "queued — not deployed yet, earns nothing until allocated");
   if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated earns nothing");
   return null;
 }
@@ -916,16 +919,28 @@ function posLabel(r) {
                 .replace(/ · (earnUSD[ce])$/i, ' <span class="sub2">$1</span>');
 }
 // risk cell: health factor for levered positions (HF = LT·L/(L−1)); otherwise the flag
-function riskCell(y, r, vault) {
+function riskCell(y, r, vault, ctx, sizeUsd) {
+  let cap = "";
+  if (y && y.kind === "loop" && y.bK && ctx && ctx.borrow && sizeUsd) {
+    const info = ctx.borrow[BORROW[y.bK]];
+    const Lx = y.meas ? y.meas.L : 3;
+    if (info && info.avail > 0) {
+      const debt = sizeUsd * (Lx - 1), pctLiq = debt / info.avail * 100, maxFresh = 0.10 * info.avail / (Lx - 1);
+      const col2 = pctLiq > 100 ? "var(--crit)" : pctLiq > 25 ? "var(--warn)" : "var(--muted)";
+      const tip2 = `Entry-capacity check at today's liquidity: this position's debt ≈ ${fmt$(debt)} vs ${fmt$(info.avail)} available (${y.bLbl}) = ${pctLiq.toFixed(0)}% of the market's spare liquidity — rebuilding it from scratch today would consume that share.` +
+        `<br>A fresh entry at 10%-of-liquidity discipline caps at ≈ ${fmt$(maxFresh)} equity at ${Lx}×.`;
+      cap = `<div class="yld" style="font-size:11px;color:${col2};margin-top:2px" data-tip="${esc(tip2)}">re-entry ${isFinite(pctLiq) ? pctLiq.toFixed(0) + "%" : "—"} of liq</div>`;
+    }
+  }
   if (y && y.meas && y.meas.lt) {
     const { L, lt } = y.meas, hf = lt * L / (L - 1), buf = 1 - ((L - 1) / L) / lt;
     const col = hf < 1.05 ? "var(--crit)" : hf < 1.15 ? "var(--warn)" : "var(--ink-2)";
     const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = ${hf.toFixed(3)}` +
       `<br>liquidates on a −${(buf * 100).toFixed(0)}% collateral-vs-debt move`;
-    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>`;
+    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + cap;
   }
   const f = flagFor(r, vault);
-  return f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "";
+  return (f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "") + cap;
 }
 function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stack = $(stackId);
@@ -936,12 +951,12 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       showTT(e, `<b>${r.label}</b>${r.pct.toFixed(1)}% · ${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : ""}${r.chain && r.chain !== "ethereum" ? " · " + r.chain : ""}`); });
     seg.addEventListener("mouseleave", hideTT);
   });
-  $(tableId).innerHTML = `<table class="alloc"><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Risk</th></tr>` +
+  $(tableId).innerHTML = `<table class="alloc"><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Risk / capacity</th></tr>` +
     rows.map((r, i) => { const y = ctx ? yieldEst(r, vault, ctx) : null;
       return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${posLabel(r)}</td>` +
       `<td class="num">${r.pct.toFixed(1)}%</td><td class="num">${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : "—"}</td>` +
       `<td class="num">${yieldCell(y, r.pct)}</td>` +
-      `<td class="risk">${riskCell(y, r, vault)}</td></tr>`; }).join("") + "</table>";
+      `<td class="risk">${riskCell(y, r, vault, ctx, tvlUsd ? tvlUsd * r.pct / 100 : null)}</td></tr>`; }).join("") + "</table>";
   $(tableId).querySelectorAll(".yld").forEach(el => {
     el.addEventListener("mousemove", e => showTT(e, `<b>${el.textContent}</b>${el.dataset.tip}`));
     el.addEventListener("mouseleave", hideTT);
@@ -970,7 +985,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     return Object.fromEntries(entries);
   });
   const pBorrow = j("https://yields.llama.fi/lendBorrow")
-    .then(list => { const m = {}; list.forEach(e => { if (e.pool) m[e.pool] = e.apyBaseBorrow != null ? +e.apyBaseBorrow : null; });
+    .then(list => { const m = {}; list.forEach(e => { if (e.pool && e.apyBaseBorrow != null) m[e.pool] = { v: +e.apyBaseBorrow,
+        avail: e.debtCeilingUsd > 0 ? +e.debtCeilingUsd : Math.max(0, (+e.totalSupplyUsd || 0) - (+e.totalBorrowUsd || 0)) }; });
       setStatus("Borrow rates", "ok", Object.keys(BORROW).filter(k => m[BORROW[k]] != null).length + "/" + Object.keys(BORROW).length + " legs"); return m; })
     .catch(() => { setStatus("Borrow rates", "err"); return {}; });
   const pMellow = key => Promise.all([
@@ -980,6 +996,10 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   ]).then(([d, a7, a30]) => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "ok"); return { d, apy: +a7.apy, apy30: +a30.apy }; })
     .catch(e => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "err"); return null; });
   const aprToApy = apr => (Math.pow(1 + apr / 100 / 365, 365) - 1) * 100;   // stETH rebases daily
+  const pPendle = j("https://api-v2.pendle.finance/core/v1/1/markets/active")
+    .then(r => { const m = (r.markets || []).find(x => /srusde/i.test(x.name || "") && (x.expiry || "").startsWith("2026-10-22"));
+      return m && m.details && m.details.impliedApy != null ? m.details.impliedApy * 100 : null; })
+    .catch(() => null);
   const pSteth = j("https://eth-api.lido.fi/v1/protocol/steth/apr/sma")
     .then(r => { const apy = aprToApy(r.data.smaApr); setStatus("Lido stETH", "ok", apy.toFixed(2) + "% APY 7d"); return apy; })
     .catch(() => { setStatus("Lido stETH", "err"); return null; });
@@ -998,7 +1018,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
         return [n, v != null ? v * 100 : null]; }).catch(() => [n, null])))
     .then(es => { const ok = es.filter(e => e[1] != null).length; setStatus("Morpho", ok ? "ok" : "err", ok + " vaults"); return Object.fromEntries(es); });
   const mellowHist = key => j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/historical-data?from_timestamp=${Math.floor(Date.now()/1e3) - 180*86400}&days=180`).catch(() => null);
-  const [hist, borrowMap, mEth, mUsd, stethApr, seven, morphoNet, hEth, hUsd] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, pMorpho, mellowHist("earnETH"), mellowHist("earnUSD")]);
+  const [hist, borrowMap, mEth, mUsd, stethApr, seven, morphoNet, hEth, hUsd, ptSrusde] = await Promise.all([pStats, pBorrow, pMellow("earnETH"), pMellow("earnUSD"), pSteth, pSeven, pMorpho, mellowHist("earnETH"), mellowHist("earnUSD"), pPendle]);
 
   const stat = n => { const pts = hist[n]; if (!pts || !pts.length) return null;
     const last = pts[pts.length - 1], last7 = pts.slice(-7).map(p => p.v), last30 = pts.slice(-30).map(p => p.v), last90 = pts.slice(-90).map(p => p.v);
@@ -1105,7 +1125,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   // Earn allocations ctx prices each position from live market rates
   const auxApy = n => { const s = stat(n); return s ? s.apy : null; };
   const ctx = {
-    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy,
+    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy, ptSrusde,
     rsETH: auxApy("rsETH (Kelp)"), syrupUSDT: auxApy("Maple syrupUSDT"), sparkUSDC: auxApy("SparkLend USDC"),
     syrupUSDC: auxApy("Maple syrupUSDC"), sUSDe: auxApy("Ethena sUSDe"), sentora: auxApy("Sentora PYUSD Main"),
   };
