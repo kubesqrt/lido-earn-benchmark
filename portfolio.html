@@ -696,7 +696,7 @@ let refreshAllocYields = () => {}; // bound in main() once data is loaded
 function yieldEst(row, vault, ctx) {
   const L = row.label, ch = (row.chain || "ethereum").toLowerCase();
   const b = k => { const e = ctx.borrow[BORROW[k]]; return e ? e.v : null; };
-  const rate = (v, tip) => v == null ? null : { kind: "rate", v, tip };
+  const rate = (v, tip, pool) => v == null ? null : { kind: "rate", v, tip, pool };
   const loop = (s, sLbl, bb, bLbl, meas, bK) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas, bK };
   // measured on-chain 2026-07-18 (overnight/actual-leverage.md): {L, net APY %, note}
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
@@ -704,26 +704,26 @@ function yieldEst(row, vault, ctx) {
     : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 10.39, lt: 0.95, live: true, asof: "2026-07-24" }, "aaveWETH");
   if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.16, lt: 0.95, live: true, asof: "2026-07-24" }, "aaveWETH");
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth")
-    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth");
+    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) - judge it paired with that position, not alone." }, "usdeEth")
+    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) - judge it paired with that position, not alone." }, "usdeEth");
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 8.85, lt: 0.92, live: true, asof: "2026-07-24" }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
   if (/levered ethena/i.test(L)) {
     const meas = ch === "plasma"
       ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.13, asof: "2026-07-24", note: "collateral ~50/50 sUSDe + unstaked USDe (the USDe leg supplies at ~1.1%); excl. XPL/Merit rewards" }
       : ch === "mantle"
-      ? { L: 6.45, lt: 0.92, live: true, asof: "2026-07-24", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization — the borrow rate swings hard around the kink, so this net flips sign with it" }
+      ? { L: 6.45, lt: 0.92, live: true, asof: "2026-07-24", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization - the borrow rate swings hard around the kink, so this net flips sign with it" }
       : { L: 7.73, lt: 0.92, live: true, sMix: 0.65, sOther: 1.36, asof: "2026-07-24", note: "collateral ~65/35 sUSDe + unstaked USDe; excl. Merit/sats" };
     const bK2 = ch === "plasma" ? "usdt0Plasma" : ch === "mantle" ? "usdt0Mantle" : "aaveUSDT";
     return loop(ctx.sUSDe, "sUSDe", b(bK2), ch === "mantle" ? "USDT0 borrow (Mantle)" : ch === "plasma" ? "USDT0 borrow (Plasma)" : "USDT borrow (Aave)", meas, bK2); }
-  if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
-  if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
-  if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
-  if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live");
-  if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live");
+  if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live", "SparkLend USDC");
+  if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live", "Maple syrupUSDC");
+  if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live", "Maple syrupUSDT");
+  if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live", "Ethena sUSDe");
+  if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live", "Sentora PYUSD Main");
   if (/morpho wsteth\/weth/i.test(L)) return loop(ctx.steth, "stETH", b("morphoWETH"), "WETH borrow (Morpho 96.5% market)", null, "morphoWETH");
-  if (/twyne/i.test(L)) return ctx.ptSrusde == null ? null : rate(ctx.ptSrusde, "PT-srUSDe-22OCT26 implied fixed APY (Pendle, live) — the unlevered floor. Twyne levers this PT against USDe credit on Aave; the position\'s leverage isn\'t public, so no levered figure is shown");
-  if (/pending deposits|boringqueue/i.test(L)) return rate(0, "queued — not deployed yet, earns nothing until allocated");
+  if (/twyne/i.test(L)) return ctx.ptSrusde == null ? null : rate(ctx.ptSrusde, "PT-srUSDe-22OCT26 implied fixed APY (Pendle, live) - the unlevered floor. Twyne levers this PT against USDe credit on Aave; the position\'s leverage isn\'t public, so no levered figure is shown");
+  if (/pending deposits|boringqueue/i.test(L)) return rate(0, "queued - not deployed yet, earns nothing until allocated");
   if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated earns nothing");
   return null;
 }
@@ -932,6 +932,39 @@ function posLabel(r) {
                 .replace(/ · (earnUSD[ce])$/i, ' <span class="sub2">$1</span>');
 }
 // risk cell: health factor for levered positions (HF = LT·L/(L−1)); otherwise the flag
+// Standalone capacity: what this position could hold if it were the ONLY position we ran.
+// Loops bind on borrow liquidity (10% of the market's available); direct deposits bind on
+// pool share (20% of TVL). No netting across positions, no collateral-depth check.
+const CAP_LIQ = 0.10, CAP_POOL = 0.20;
+function capacityCell(y, r, ctx, curUsd) {
+  if (!y || !ctx) return '<span style="color:var(--muted)">—</span>';
+  let max = null, basis = "", detail = "";
+  if (y.kind === "loop" && y.bK && ctx.borrow) {
+    const info = ctx.borrow[BORROW[y.bK]];
+    const L = y.meas ? y.meas.L : 3;
+    if (info && info.avail > 0 && L > 1.01) {
+      max = CAP_LIQ * info.avail / (L - 1);
+      basis = "10% of borrow liquidity";
+      detail = `At ${L}× every $1 of equity draws $${(L - 1).toFixed(2)} of debt. Holding the draw to 10% of the ${y.bLbl} market's ${fmt$(info.avail)} available supports ≈ ${fmt$(max)} of equity.`;
+    }
+  } else if (y.kind === "rate" && y.pool && ctx.tvlOf) {
+    // lending markets report spare liquidity as chart TVL; cap on TOTAL deposits where we have them
+    const lbe = ctx.borrow ? ctx.borrow[AUX_POOLS[y.pool] || ((POOL_IDS[y.pool] || {}).id)] : null;
+    const dep = lbe && lbe.sup > 0 ? lbe.sup : ctx.tvlOf(y.pool);
+    if (dep > 0) {
+      max = CAP_POOL * dep;
+      basis = "20% of the market's deposits";
+      detail = `Unlevered deposit, capped at 20% of the venue's ${fmt$(dep)} total deposits so we are never the dominant lender.`;
+    }
+  }
+  if (max == null) return '<span style="color:var(--muted)">—</span>';
+  const use = curUsd != null && max > 0 ? curUsd / max * 100 : null;
+  const col = use == null ? "var(--ink-2)" : use > 100 ? "var(--crit)" : use > 75 ? "var(--warn)" : "var(--ink-2)";
+  const tip = `Standalone capacity - what we could deploy here if this were our only position, under the framework caps.<br>${detail}<br>Binding constraint: ${basis}.` +
+    (use != null ? `<br>Today's ${fmt$(curUsd)} is ${use.toFixed(0)}% of that${use > 100 ? " - the position is already larger than a fresh entry could be built to." : "."}` : "") +
+    `<br>Independent by construction: no netting across positions, and collateral-side depth is not checked here.`;
+  return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">${fmt$(max)}${use != null ? ` <span style="color:var(--muted)">${use.toFixed(0)}%</span>` : ""}</span>`;
+}
 function riskCell(y, r, vault, ctx, sizeUsd) {
   let cap = "";
   if (y && y.kind === "loop" && y.bK && ctx && ctx.borrow && sizeUsd) {
@@ -940,7 +973,7 @@ function riskCell(y, r, vault, ctx, sizeUsd) {
     if (info && info.avail > 0) {
       const debt = sizeUsd * (Lx - 1), pctLiq = debt / info.avail * 100, maxFresh = 0.10 * info.avail / (Lx - 1);
       const col2 = pctLiq > 100 ? "var(--crit)" : pctLiq > 25 ? "var(--warn)" : "var(--muted)";
-      const tip2 = `Entry-capacity check at today's liquidity: this position's debt ≈ ${fmt$(debt)} vs ${fmt$(info.avail)} available (${y.bLbl}) = ${pctLiq.toFixed(0)}% of the market's spare liquidity — rebuilding it from scratch today would consume that share.` +
+      const tip2 = `Entry-capacity check at today's liquidity: this position's debt ≈ ${fmt$(debt)} vs ${fmt$(info.avail)} available (${y.bLbl}) = ${pctLiq.toFixed(0)}% of the market's spare liquidity - rebuilding it from scratch today would consume that share.` +
         `<br>A fresh entry at 10%-of-liquidity discipline caps at ≈ ${fmt$(maxFresh)} equity at ${Lx}×.`;
       cap = `<div class="yld" style="font-size:11px;color:${col2};margin-top:2px" data-tip="${esc(tip2)}">re-entry ${isFinite(pctLiq) ? pctLiq.toFixed(0) + "%" : "—"} of liq</div>`;
     }
@@ -955,7 +988,7 @@ function riskCell(y, r, vault, ctx, sizeUsd) {
       const ratio = ((L - 1) / L) / lt, px = ctx.ethPx * ratio;
       const tipF = `Debt is USD-denominated against ${y.meas.fx}-denominated collateral, so the liquidation trigger is the outright ${y.meas.fx} price:` +
         `<br>liq price = spot × posLTV/LT = $${ctx.ethPx.toFixed(0)} × ${(((L - 1) / L) * 100).toFixed(1)}%/${(lt * 100).toFixed(0)}% ≈ <b>$${px.toFixed(0)}</b> (−${((1 - ratio) * 100).toFixed(0)}%)` +
-        `<br>The ETH-debt loops above have no such price trigger — they liquidate only on a relative wstETH-vs-ETH move.`;
+        `<br>The ETH-debt loops above have no such price trigger - they liquidate only on a relative wstETH-vs-ETH move.`;
       fxLine = `<div class="yld" style="font-size:11px;color:var(--muted);margin-top:2px" data-tip="${esc(tipF)}">liq ≈ $${px.toFixed(0)} ETH (−${((1 - ratio) * 100).toFixed(0)}%)</div>`;
     }
     return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + fxLine + cap;
@@ -972,11 +1005,12 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
       showTT(e, `<b>${r.label}</b>${r.pct.toFixed(1)}% · ${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : ""}${r.chain && r.chain !== "ethereum" ? " · " + r.chain : ""}`); });
     seg.addEventListener("mouseleave", hideTT);
   });
-  $(tableId).innerHTML = `<table class="alloc"><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th>Risk / capacity</th></tr>` +
+  $(tableId).innerHTML = `<table class="alloc"><tr><th>Position</th><th class="num">%</th><th class="num">Size</th><th class="num">Yield / carry</th><th class="num" title="Largest amount we could deploy into this position on its own under the framework caps - 10% of the borrow market's available liquidity for levered loops, 20% of pool TVL for direct deposits. Each position treated independently.">Max size</th><th>Risk / capacity</th></tr>` +
     rows.map((r, i) => { const y = ctx ? yieldEst(r, vault, ctx) : null;
       return `<tr><td><span class="chip" style="background:${i < 8 ? SLOTS[i] : "var(--peer-bar)"}"></span>${posLabel(r)}</td>` +
       `<td class="num">${r.pct.toFixed(1)}%</td><td class="num">${tvlUsd ? fmt$(tvlUsd * r.pct / 100) : "—"}</td>` +
       `<td class="num">${yieldCell(y, r.pct)}</td>` +
+      `<td class="num">${capacityCell(y, r, ctx, tvlUsd ? tvlUsd * r.pct / 100 : null)}</td>` +
       `<td class="risk">${riskCell(y, r, vault, ctx, tvlUsd ? tvlUsd * r.pct / 100 : null)}</td></tr>`; }).join("") + "</table>";
   $(tableId).querySelectorAll(".yld").forEach(el => {
     el.addEventListener("mousemove", e => showTT(e, `<b>${el.textContent}</b>${el.dataset.tip}`));
@@ -1007,7 +1041,8 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   });
   const pBorrow = j("https://yields.llama.fi/lendBorrow")
     .then(list => { const m = {}; list.forEach(e => { if (e.pool && e.apyBaseBorrow != null) m[e.pool] = { v: +e.apyBaseBorrow,
-        avail: e.debtCeilingUsd > 0 ? +e.debtCeilingUsd : Math.max(0, (+e.totalSupplyUsd || 0) - (+e.totalBorrowUsd || 0)) }; });
+        avail: e.debtCeilingUsd > 0 ? +e.debtCeilingUsd : Math.max(0, (+e.totalSupplyUsd || 0) - (+e.totalBorrowUsd || 0)),
+        sup: +e.totalSupplyUsd || 0 }; });
       setStatus("Borrow rates", "ok", Object.keys(BORROW).filter(k => m[BORROW[k]] != null).length + "/" + Object.keys(BORROW).length + " legs"); return m; })
     .catch(() => { setStatus("Borrow rates", "err"); return {}; });
   const pMellow = key => Promise.all([
@@ -1145,8 +1180,9 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
 
   // Earn allocations ctx prices each position from live market rates
   const auxApy = n => { const s = stat(n); return s ? s.apy : null; };
+  const auxTvl = n => { const s = stat(n); return s ? s.tvl : null; };
   const ctx = {
-    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy, ptSrusde, ethPx: ethPrice,
+    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy, ptSrusde, ethPx: ethPrice, tvlOf: auxTvl,
     rsETH: auxApy("rsETH (Kelp)"), syrupUSDT: auxApy("Maple syrupUSDT"), sparkUSDC: auxApy("SparkLend USDC"),
     syrupUSDC: auxApy("Maple syrupUSDC"), sUSDe: auxApy("Ethena sUSDe"), sentora: auxApy("Sentora PYUSD Main"),
   };
