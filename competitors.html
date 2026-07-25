@@ -287,8 +287,8 @@ const _noel = { innerHTML:"", textContent:"", style:{}, dataset:{}, classList:{a
   addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return _noel; }, appendChild(){},
   setAttribute(){}, removeAttribute(){}, remove(){}, insertAdjacentHTML(){}, closest(){ return null; },
   set onclick(v){}, getBoundingClientRect(){ return { width:0, height:0, left:0, top:0 }; }, scrollIntoView(){} };
-const $ = id => document.getElementById(id);
-const esc = t => String(t).replace(/"/g, "&quot;") || _noel;
+const $ = id => document.getElementById(id) || _noel;
+const esc = t => String(t).replace(/"/g, "&quot;");
 const _live = id => !!document.getElementById(id);   // true only when the section exists on this page
 const fmt$ = v => v >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "K";
 const fmtEth = e => (Math.abs(e) >= 1000 ? (e/1000).toFixed(1) + "k" : Math.abs(e) >= 1 ? e.toFixed(1) : e.toFixed(4)) + " ETH";
