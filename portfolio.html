@@ -787,7 +787,8 @@ function statCard(items) {
 }
 async function loadVaultStats(cfgs) {
   // Phase 1 cheap reads that never fail: TVL, share price, pending queue, idle, freshness. Render immediately.
-  const px = c => (c.tvl && c.shares ? c.tvl / c.shares : 0);
+  // prefer the vault's own lp_price (F13: TVL / API-shares drifts ~2% from it); fallback to the ratio
+  const px = c => c.lpNow != null ? c.lpNow * (c.unit === "ETH" ? (c.price || 0) : 1) : (c.tvl && c.shares ? c.tvl / c.shares : 0);
   for (const c of cfgs) {
     try {
       const bal = await rpcOn(HEAD_RPCS, "eth_call", [{ to: c.token, data: "0x70a08231" + "0".repeat(24) + c.token.slice(2) }, "latest"]);
@@ -1170,15 +1171,18 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     const lp = i => parseFloat(raw[i].lp_price && raw[i].lp_price.value);
     const a = lp(raw.length - 8), b2 = lp(raw.length - 1);
     return a > 0 && b2 > 0 ? (b2 / a - 1) * 100 : null; };
+  const lpNow = raw => { if (!raw || !raw.length) return null;
+    const v = parseFloat(raw[raw.length - 1].lp_price && raw[raw.length - 1].lp_price.value);
+    return v > 0 ? (v > 1e12 ? v / 1e18 : v > 1e4 ? v / 1e6 : v) : null; };
   const sharesOf = raw => { if (!raw || !raw.length) return null;
     const t = raw[raw.length - 1].total_shares; return t ? +t.amount / 10 ** (+t.decimals || 18) : null; };
   const idleOf = rows => { if (!rows) return null; const r = (rows.full || rows).find(x => x.cat === "idle"); return r ? r.pct : 0; };
   const ageOf = m => m && m.d && m.d.apyLastUpdate ? (Date.now() / 1e3 - +m.d.apyLastUpdate) / 3600 : null;
   loadVaultStats([
     { el: "vstatsEth", token: "0xBBFC8683C8fE8cF73777feDE7ab9574935fea0A4", tvl: ethTvl, apy: ethApy, unit: "ETH", price: ethPrice,
-      shares: sharesOf(hEth), lp7: lp7(hEth), idle: idleOf(ethRowsA), reportAge: ageOf(mEth), redeemInt: "24h" },
+      shares: sharesOf(hEth), lp7: lp7(hEth), lpNow: lpNow(hEth), idle: idleOf(ethRowsA), reportAge: ageOf(mEth), redeemInt: "24h" },
     { el: "vstatsUsd", token: "0x4Ce1ac8F43E0E5BD7A346A98aF777bF8fbeA1981", tvl: usdTvl, apy: usdApy, unit: "USD",
-      shares: sharesOf(hUsd), lp7: lp7(hUsd), idle: idleOf(usdRowsA), reportAge: ageOf(mUsd), redeemInt: "48h" },
+      shares: sharesOf(hUsd), lp7: lp7(hUsd), lpNow: lpNow(hUsd), idle: idleOf(usdRowsA), reportAge: ageOf(mUsd), redeemInt: "48h" },
   ]);
 
   // peer look-through
