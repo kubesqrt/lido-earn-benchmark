@@ -288,8 +288,8 @@ const _noel = { innerHTML:"", textContent:"", style:{}, dataset:{}, classList:{a
   addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return _noel; }, appendChild(){},
   setAttribute(){}, removeAttribute(){}, remove(){}, insertAdjacentHTML(){}, closest(){ return null; },
   set onclick(v){}, getBoundingClientRect(){ return { width:0, height:0, left:0, top:0 }; }, scrollIntoView(){} };
-const $ = id => document.getElementById(id);
-const esc = t => String(t).replace(/"/g, "&quot;") || _noel;
+const $ = id => document.getElementById(id) || _noel;
+const esc = t => String(t).replace(/"/g, "&quot;");
 const _live = id => !!document.getElementById(id);   // true only when the section exists on this page
 const fmt$ = v => v >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + (v/1e3).toFixed(0) + "K";
 const fmtEth = e => (Math.abs(e) >= 1000 ? (e/1000).toFixed(1) + "k" : Math.abs(e) >= 1 ? e.toFixed(1) : e.toFixed(4)) + " ETH";
@@ -679,16 +679,22 @@ function yieldEst(row, vault, ctx) {
   const loop = (s, sLbl, bb, bLbl, meas, bK) => (s == null || bb == null) ? null : { kind: "loop", s, sLbl, b: bb, bLbl, meas, bK };
   // measured on-chain 2026-07-18 (overnight/actual-leverage.md): {L, net APY %, note}
   if (/wsteth\/eth/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 8.94, net: 4.15, lt: 0.93 }, "sparkWETH")
-    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 6.82, net: 3.27, lt: 0.95 }, "aaveWETH");
-  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.17, net: 6.92, lt: 0.95 }, "aaveWETH");
+    ? loop(ctx.steth, "stETH", b("sparkWETH"), "WETH borrow (Spark)", { L: 5.44, lt: 0.93, live: true, asof: "2026-07-24" }, "sparkWETH")
+    : loop(ctx.steth, "stETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 10.39, lt: 0.95, live: true, asof: "2026-07-24" }, "aaveWETH");
+  if (/rseth\/eth/i.test(L)) return loop(ctx.rsETH, "rsETH", b("aaveWETH"), "WETH borrow (Aave)", { L: 12.16, lt: 0.95, live: true, asof: "2026-07-24" }, "aaveWETH");
   if (/wsteth\/usd/i.test(L)) return /spark/i.test(L)
-    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth")
-    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth");
+    ? loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.62, net: 1.36, lt: 0.84, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth")
+    : loop(ctx.steth, "stETH staking", b("usdeEth"), "USDe borrow", { L: 1.56, net: 2.05, lt: 0.81, live: true, fx: "ETH", note: "Negative-carry leverage: USDe borrow > stETH staking, so the loop nets BELOW unlevered wstETH. It only pays because the borrowed USD funds the earnUSD leg (5%+) — judge it paired with that position, not alone." }, "usdeEth");
   if (vault === "eth" && /earnusd/i.test(L)) return rate(ctx.earnUsd, "live earnUSD vault APY (7d TW)");
-  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 6.56, net: 4.30, lt: 0.92 }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
-  if (/levered ethena/i.test(L)) { const meas = ch === "plasma" ? { L: 5.86, net: -2.99, lt: 0.92, note: "excl. XPL/Merit rewards" } : ch === "mantle" ? { L: 9.00, net: 4.34, lt: 0.92, note: "excl. MNT rewards" } : { L: 5.66, net: -3.15, lt: 0.92, note: "excl. Merit/sats" };
-    return loop(ctx.sUSDe, "sUSDe", b(ch === "plasma" ? "usdePlasma" : "usdeEth"), "USDe borrow" + (ch === "mantle" ? " (mainnet proxy)" : ""), meas, ch === "plasma" ? "usdePlasma" : "usdeEth"); }
+  if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 8.85, lt: 0.92, live: true, asof: "2026-07-24" }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
+  if (/levered ethena/i.test(L)) {
+    const meas = ch === "plasma"
+      ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.13, asof: "2026-07-24", note: "collateral ~50/50 sUSDe + unstaked USDe (the USDe leg supplies at ~1.1%); excl. XPL/Merit rewards" }
+      : ch === "mantle"
+      ? { L: 6.45, lt: 0.92, live: true, asof: "2026-07-24", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization — the borrow rate swings hard around the kink, so this net flips sign with it" }
+      : { L: 7.73, lt: 0.92, live: true, sMix: 0.65, sOther: 1.36, asof: "2026-07-24", note: "collateral ~65/35 sUSDe + unstaked USDe; excl. Merit/sats" };
+    const bK2 = ch === "plasma" ? "usdt0Plasma" : ch === "mantle" ? "usdt0Mantle" : "aaveUSDT";
+    return loop(ctx.sUSDe, "sUSDe", b(bK2), ch === "mantle" ? "USDT0 borrow (Mantle)" : ch === "plasma" ? "USDT0 borrow (Plasma)" : "USDT borrow (Aave)", meas, bK2); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live");
   if (/maple syrup usdc/i.test(L)) return rate(ctx.syrupUSDC, "syrupUSDC APY, live");
   if (/maple syrup usdt/i.test(L)) return rate(ctx.syrupUSDT, "syrupUSDT APY, live");
@@ -710,9 +716,10 @@ function yieldCell(y, pct) {
   const carry = y.s - y.b;
   if (LOOP_LEV === "m" && y.meas) {
     const m = y.meas;
-    const net = m.live ? (y.s * m.L - y.b * (m.L - 1)) : m.net;   // live carry at the measured leverage
-    const tip = (m.live ? `L = ${m.L}× measured Jul-18; carry computed live from current rates` : `MEASURED on-chain 2026-07-18: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)`) +
-      `<br>s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(carry >= 0 ? "+" : "") + carry.toFixed(2)}pp/turn` +
+    const sEff = m.sMix != null ? y.s * m.sMix + (m.sOther || 0) * (1 - m.sMix) : y.s;
+    const net = m.live ? (sEff * m.L - y.b * (m.L - 1)) : m.net;   // live carry at the measured leverage
+    const tip = (m.live ? `L = ${m.L}× measured on-chain ${m.asof || "2026-07-24"}; carry computed live from current rates` : `MEASURED on-chain ${m.asof || "2026-07-18"}: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)`) +
+      `<br>s = ${sEff.toFixed(2)}% ${y.sLbl}${m.sMix != null ? " (blended for the collateral mix)" : ""} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(sEff - y.b >= 0 ? "+" : "") + (sEff - y.b).toFixed(2)}pp/turn` +
       (m.note ? `<br>${m.note}` : "") +
       `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
     return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${esc(tip)}">${net.toFixed(2)}% @${m.L}×</span>`;
@@ -921,7 +928,15 @@ function riskCell(y, r, vault, ctx, sizeUsd) {
     const col = hf < 1.05 ? "var(--crit)" : hf < 1.15 ? "var(--warn)" : "var(--ink-2)";
     const tip = `Health factor = LT·L/(L−1) = ${lt}·${L}/${(L - 1).toFixed(2)} = ${hf.toFixed(3)}` +
       `<br>liquidates on a −${(buf * 100).toFixed(0)}% collateral-vs-debt move`;
-    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + cap;
+    let fxLine = "";
+    if (y.meas.fx && ctx && ctx.ethPx) {
+      const ratio = ((L - 1) / L) / lt, px = ctx.ethPx * ratio;
+      const tipF = `Debt is USD-denominated against ${y.meas.fx}-denominated collateral, so the liquidation trigger is the outright ${y.meas.fx} price:` +
+        `<br>liq price = spot × posLTV/LT = $${ctx.ethPx.toFixed(0)} × ${(((L - 1) / L) * 100).toFixed(1)}%/${(lt * 100).toFixed(0)}% ≈ <b>$${px.toFixed(0)}</b> (−${((1 - ratio) * 100).toFixed(0)}%)` +
+        `<br>The ETH-debt loops above have no such price trigger — they liquidate only on a relative wstETH-vs-ETH move.`;
+      fxLine = `<div class="yld" style="font-size:11px;color:var(--muted);margin-top:2px" data-tip="${esc(tipF)}">liq ≈ $${px.toFixed(0)} ETH (−${((1 - ratio) * 100).toFixed(0)}%)</div>`;
+    }
+    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + fxLine + cap;
   }
   const f = flagFor(r, vault);
   return (f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "") + cap;
@@ -1109,7 +1124,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   // Earn allocations ctx prices each position from live market rates
   const auxApy = n => { const s = stat(n); return s ? s.apy : null; };
   const ctx = {
-    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy, ptSrusde,
+    borrow: borrowMap, steth: ETH_BENCH, earnUsd: usdApy, ptSrusde, ethPx: ethPrice,
     rsETH: auxApy("rsETH (Kelp)"), syrupUSDT: auxApy("Maple syrupUSDT"), sparkUSDC: auxApy("SparkLend USDC"),
     syrupUSDC: auxApy("Maple syrupUSDC"), sUSDe: auxApy("Ethena sUSDe"), sentora: auxApy("Sentora PYUSD Main"),
   };
