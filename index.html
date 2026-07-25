@@ -132,7 +132,8 @@
   .stackbar div:hover { opacity: .8; }
   .tt { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--rule);
         padding: 8px 11px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.35);
-        opacity: 0; transition: opacity .08s; z-index: 50; max-width: 320px; white-space: nowrap; color: var(--ink); }
+        opacity: 0; transition: opacity .08s; z-index: 50; max-width: 340px; color: var(--ink);
+        white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
   .tt b { display: block; font-size: 12px; font-weight: 400; margin-bottom: 2px; font-variant-numeric: tabular-nums; }
   .meth { font-size: 12px; color: var(--ink-2); max-width: 96ch; }
   .meth b { font-weight: 400; color: var(--ink); }
@@ -299,8 +300,12 @@ const mean = a => a.reduce((s,v) => s+v, 0) / a.length;
 const stdev = a => { const m = mean(a); return Math.sqrt(mean(a.map(v => (v-m)*(v-m)))); };
 const tt = $("tt");
 function showTT(e, html) { tt.innerHTML = html; tt.style.opacity = 1;
-  tt.style.left = Math.min(e.clientX + 14, innerWidth - 310) + "px";
-  tt.style.top = Math.min(e.clientY + 12, innerHeight - 100) + "px"; }
+  // measure after content is in: wrapped tips vary in height, so flip rather than clamp
+  const r = tt.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 12;
+  if (x + r.width > innerWidth - 8) x = Math.max(8, e.clientX - r.width - 14);
+  if (y + r.height > innerHeight - 8) y = Math.max(8, e.clientY - r.height - 12);
+  tt.style.left = x + "px"; tt.style.top = y + "px"; }
 function hideTT() { tt.style.opacity = 0; }
 
 const statusEl = $("status");
