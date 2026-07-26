@@ -712,8 +712,8 @@ function yieldEst(row, vault, ctx) {
     const meas = ch === "plasma"
       ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.13, asof: "2026-07-24", note: "collateral ~50/50 sUSDe + unstaked USDe (the USDe leg supplies at ~1.1%); excl. XPL/Merit rewards" }
       : ch === "mantle"
-      ? { L: 6.45, lt: 0.92, live: true, asof: "2026-07-24", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization - the borrow rate swings hard around the kink, so this net flips sign with it" }
-      : { L: 7.73, lt: 0.92, live: true, sMix: 0.65, sOther: 1.36, asof: "2026-07-24", note: "collateral ~65/35 sUSDe + unstaked USDe; excl. Merit/sats" };
+      ? { L: 7.69, lt: 0.92, live: true, asof: "2026-07-25", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization - the borrow rate swings hard around the kink, so this net flips sign with it" }
+      : { L: 6.84, lt: 0.92, live: true, sMix: 0.65, sOther: 1.36, asof: "2026-07-25", note: "collateral ~65/35 sUSDe + unstaked USDe; excl. Merit/sats" };
     const bK2 = ch === "plasma" ? "usdt0Plasma" : ch === "mantle" ? "usdt0Mantle" : "aaveUSDT";
     return loop(ctx.sUSDe, "sUSDe", b(bK2), ch === "mantle" ? "USDT0 borrow (Mantle)" : ch === "plasma" ? "USDT0 borrow (Plasma)" : "USDT borrow (Aave)", meas, bK2); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live", "SparkLend USDC");
@@ -722,7 +722,9 @@ function yieldEst(row, vault, ctx) {
   if (/susde/i.test(L)) return rate(ctx.sUSDe, "sUSDe staking APY, live", "Ethena sUSDe");
   if (/sentora pyusd/i.test(L)) return rate(ctx.sentora, "Sentora PYUSD vault APY, live", "Sentora PYUSD Main");
   if (/morpho wsteth\/weth/i.test(L)) return loop(ctx.steth, "stETH", b("morphoWETH"), "WETH borrow (Morpho 96.5% market)", null, "morphoWETH");
-  if (/twyne/i.test(L)) return ctx.ptSrusde == null ? null : rate(ctx.ptSrusde, "PT-srUSDe-22OCT26 implied fixed APY (Pendle, live) - the unlevered floor. Twyne levers this PT against USDe credit on Aave; the position\'s leverage isn\'t public, so no levered figure is shown");
+  if (/twyne/i.test(L)) return loop(ctx.ptSrusde, "PT-srUSDe implied (fixed)", b("usdeEth"), "USDe borrow (Aave, via Twyne)",
+    { L: 8.64, lt: 0.9326, live: true, asof: "on-chain 2026-07-25",
+      note: "Verified on-chain: the subvault owns Twyne collateral vault 0x2cc5...44b0 - $10.2M wrapped PT-srUSDe collateral vs $9.0M USDe debt on Aave e-mode 48, HF 1.055. Net shown is BEFORE Twyne\'s credit-delegation fee (not public). CV equity $1.18M vs Mellow\'s $0.88M row - the gap is reserved credit-LP capital inside the CV." }, "usdeEth");
   if (/pending deposits|boringqueue/i.test(L)) return rate(0, "queued - not deployed yet, earns nothing until allocated");
   if (row.cat === "idle" || /^usdt$|^usdc$|idle/i.test(L)) return rate(0, "unallocated earns nothing");
   return null;
@@ -1049,8 +1051,19 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/data`),
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy?days=7`),
     j(`https://api.mellow.finance/v1/chain/1/core-vaults/${VAULTS[key].addr}/timeweighted-apy?days=30`),
-  ]).then(([d, a7, a30]) => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "ok"); return { d, apy: +a7.apy, apy30: +a30.apy }; })
-    .catch(e => { setStatus("Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD"), "err"); return null; });
+  ]).then(([d, a7, a30]) => {
+    const lbl = "Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD");
+    if (!d || !d.allocations || !d.allocations.length) throw new Error("empty payload");
+    setStatus(lbl, "ok");
+    try { localStorage.setItem("mellow_" + key, JSON.stringify({ d, apy: +a7.apy, apy30: +a30.apy, ts: Date.now() })); } catch (x) {}
+    return { d, apy: +a7.apy, apy30: +a30.apy };
+  }).catch(e => {
+    const lbl = "Mellow " + (key === "earnETH" ? "EarnETH" : "EarnUSD");
+    try { const c = JSON.parse(localStorage.getItem("mellow_" + key) || "null");
+      if (c && c.d) { setStatus(lbl, "warn", "API down - cached " + new Date(c.ts).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })); return c; }
+    } catch (x) {}
+    setStatus(lbl, "err"); return null;
+  });
   const aprToApy = apr => (Math.pow(1 + apr / 100 / 365, 365) - 1) * 100;   // stETH rebases daily
   const pPendle = j("https://api-v2.pendle.finance/core/v1/1/markets/active")
     .then(r => { const m = (r.markets || []).find(x => /srusde/i.test(x.name || "") && (x.expiry || "").startsWith("2026-10-22"));
