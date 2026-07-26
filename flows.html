@@ -404,6 +404,16 @@ async function priceAndTvl(cfg) {
     const v = parseFloat(d.lp_price && d.lp_price.value);
     if (v > 0) lp = v > 1e12 ? v / 1e18 : v > 1e4 ? v / 1e6 : v;
   } catch (e) {}
+  if (lp == null) {
+    // Mellow removed lp_price from /data (observed 2026-07-26); the historical endpoint still carries it
+    try {
+      const h = await (await fetch(`https://api.mellow.finance/v1/chain/1/core-vaults/${cfg.vault}/historical-data?from_timestamp=${Math.floor(Date.now()/1e3) - 7*86400}&days=7`, { signal: withTimeout(10000) })).json();
+      if (Array.isArray(h) && h.length) {
+        const v2 = parseFloat(h[h.length - 1].lp_price && h[h.length - 1].lp_price.value);
+        if (v2 > 0) lp = v2 > 1e12 ? v2 / 1e18 : v2 > 1e4 ? v2 / 1e6 : v2;
+      }
+    } catch (e2) {}
+  }
   // mainnet ERC20 totalSupply is NOT the full share ledger (cross-chain shares) - TVL/supply overprices
   const price = lp != null ? (cfg.native === "ETH" ? (ethPrice ? lp * ethPrice : null) : lp)
               : (shares && tvl) ? tvl / shares : null;
