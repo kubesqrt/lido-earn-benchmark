@@ -993,10 +993,56 @@ function riskCell(y, r, vault, ctx, sizeUsd) {
         `<br>The ETH-debt loops above have no such price trigger - they liquidate only on a relative wstETH-vs-ETH move.`;
       fxLine = `<div class="yld" style="font-size:11px;color:var(--muted);margin-top:2px" data-tip="${esc(tipF)}">liq ≈ $${px.toFixed(0)} ETH (−${((1 - ratio) * 100).toFixed(0)}%)</div>`;
     }
-    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + fxLine + cap;
+    const rc = RECON_MAP(r) ? `<div class="rcslot" data-rc="${esc(posLabel(r))}" style="font-size:10.5px;color:var(--muted);margin-top:2px">chain check…</div>` : "";
+    return `<span class="yld" style="color:${col}" data-tip="${esc(tip)}">HF ${hf.toFixed(2)}</span>` + fxLine + cap + rc;
   }
   const f = flagFor(r, vault);
   return (f ? `<span class="flag ${f[0]}">${f[1]}</span>` : "") + cap;
+}
+// ---- live on-chain reconciliation: read each subvault's Aave/Spark account and compare ----
+const RECON = [
+  { re: /aave levered wsteth\/eth/i, pool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", holder: "0x893aa69FBAA1ee81B536f0FbE3A3453e86290080", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"] },
+  { re: /spark levered wsteth\/eth/i, pool: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987", holder: "0x3883d8CdCdda03784908cFa2F34ED2cF1604e4d7", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"] },
+  { re: /aave levered wsteth\/usd/i, pool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", holder: "0x181cB55f872450D16aE858D532B4e35e50eaA76D", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"] },
+  { re: /aave levered rseth\/eth/i, pool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", holder: "0xCDfA7EfE670869c6b6be4375654E0b206eF49c89", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"] },
+  { re: /syrupusdt\/usdt0/i, pool: "0x925a2A7214Ed92428B5b1B090F80b25700095e12", holder: "0xbaaE2F02d3a4f33eC164902e5A9E980Cb4c71afB", rpcs: ["https://rpc.plasma.to", "https://plasma.drpc.org"] },
+  { re: /plasma levered ethena/i, pool: "0x925a2A7214Ed92428B5b1B090F80b25700095e12", holder: "0xa11BE438F1961dB47F6660BDAF59b05C0200ADC5", rpcs: ["https://rpc.plasma.to", "https://plasma.drpc.org"] },
+  { re: /mantle levered ethena/i, pool: "0x458F293454fE0d67EC0655f3672301301DD51422", holder: "0x18b50CbAAf4C48855b29E548E4d0248C71A15392", rpcs: ["https://mantle-rpc.publicnode.com", "https://rpc.mantle.xyz"] },
+  { re: /^aave levered ethena/i, pool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", holder: "0x31B7d5A2B1CE1871Dd642F6aeCC0Ef68d126B95A", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"] },
+  { re: /twyne/i, pool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", holder: "0x2cc58a703ad070f6668abaaa19411e0f4ad544b0", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://eth.drpc.org"],
+    note: "CV equity includes reserved credit-LP capital - Mellow reports our slice only" },
+];
+function RECON_MAP(r) { const l = (r.label || ""); return RECON.find(x => x.re.test(l)) || null; }
+async function reconcileOnChain() {
+  const slots = document.querySelectorAll(".rcslot");
+  if (!slots.length) return;
+  const pad40 = a => "0".repeat(24) + a.slice(2).toLowerCase();
+  const w = (h, i) => h.slice(2 + i * 64, 2 + (i + 1) * 64);
+  for (const el of slots) {
+    const label = el.dataset.rc || "";
+    const cfg = RECON.find(x => x.re.test(label));
+    if (!cfg) { el.textContent = ""; continue; }
+    let res = null;
+    for (let att = 0; att < 6 && !res; att++) {
+      const u = cfg.rpcs[att % cfg.rpcs.length];
+      try {
+        const j = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: cfg.pool, data: "0xbf92857c" + pad40(cfg.holder) }, "latest"] }) }).then(x => x.json());
+        if (j && j.result && j.result !== "0x") res = j.result;
+      } catch (e) {}
+      if (!res) await new Promise(s => setTimeout(s, 250));
+    }
+    if (!res) { el.textContent = "chain check unavailable"; continue; }
+    const C = parseInt(w(res, 0), 16) / 1e8, D = parseInt(w(res, 1), 16) / 1e8, hf = parseInt(w(res, 5), 16) / 1e18;
+    const E = C - D, L = E > 0 ? C / E : null;
+    const tr = el.closest("tr");
+    let dashL = null;
+    if (tr) { const m = (tr.textContent || "").match(/@([\d.]+)×/); if (m) dashL = parseFloat(m[1]); }
+    const drift = dashL && L ? Math.abs(L - dashL) / dashL * 100 : null;
+    const col = drift == null ? "var(--muted)" : drift > 15 ? "var(--crit)" : drift > 5 ? "var(--warn)" : "var(--ok, #4caf7d)";
+    const t = new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    el.innerHTML = `<span class="yld" style="color:${col}" data-tip="${esc(`Read live from the pool contract (getUserAccountData) at ${t}: collateral ${fmt$(C)}, debt ${fmt$(D)}, equity ${fmt$(E)}, HF ${hf > 1e9 ? "∞" : hf.toFixed(3)}.` + (drift != null ? `<br>Dashboard leverage ${dashL}× vs chain ${L.toFixed(2)}× - drift ${drift.toFixed(1)}%.` : "") + (cfg.note ? `<br>${cfg.note}` : ""))}">⛓ ${L ? L.toFixed(2) + "×" : "?"} · E ${fmt$(E)}${drift != null ? ` · Δ${drift.toFixed(0)}%` : ""}</span>`;
+  }
 }
 function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
   const stack = $(stackId);
@@ -1212,6 +1258,7 @@ function renderAlloc(stackId, tableId, rows, tvlUsd, vault, ctx) {
     sparkline($("earnUsdSpark"), (earnUsdSeries && earnUsdSeries.length > 8 ? earnUsdSeries : (mUsd.d.historicalApy || []).map(p => ({ v: +p.apy }))), "rolling annualized APY, ~6mo");
     usdRowsA = flattenAllocations(mUsd.d);
     renderAlloc("earnUsdStack", "earnUsdAlloc", usdRowsA, usdTvl, "usd", ctx);
+    setTimeout(() => { try { reconcileOnChain(); } catch (e) {} }, 800);
     renderLenses("lensUsd", usdRowsA, "usd");
   } else { $("earnUsdHead").textContent = "EarnUSD Mellow API unavailable"; $("lensUsd").innerHTML = ""; }
   // leverage assumption control re-renders both allocation tables from cached data (no refetch)
