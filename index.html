@@ -562,14 +562,12 @@ function barChart(el, rows, benchmarks, tableEl) {
   });
 }
 function compTable(el, rows, bench) {
-  let h = `<table><tr><th></th><th>Vault</th><th class="num">Net APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
+  let h = `<table><tr><th></th><th>Vault</th><th class="num">Net APY</th><th class="num">30d mean</th><th class="num">&sigma; 90d</th><th class="num">TVL</th></tr>`;
   rows.forEach((r, ri) => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
     h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td>` +
       `<td class="num">${r.apy.toFixed(2)}%</td><td class="num">${r.m30 != null ? r.m30.toFixed(2) + "%" : "—"}</td>` +
-      `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${pp(sp)}</td>` +
-      `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td>` +
-      `<td class="num">${sh != null ? sh.toFixed(1) : "—"}</td><td class="num">${fmt$(r.tvl)}</td></tr>`;
+      `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td><td class="num">${fmt$(r.tvl)}</td></tr>`;
   });
   el.innerHTML = h + "</table>";
   el.querySelectorAll("tr.pick").forEach(tr => tr.addEventListener("click", () => toggleDetail(tr)));
@@ -694,10 +692,10 @@ function yieldEst(row, vault, ctx) {
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 8.85, lt: 0.92, live: true, asof: "2026-07-24", base: { d: "2026-07-18", L: 6.56, net: 4.30 } }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
   if (/levered ethena/i.test(L)) {
     const meas = ch === "plasma"
-      ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.13, asof: "2026-07-24", note: "collateral ~50/50 sUSDe + unstaked USDe (the USDe leg supplies at ~1.1%); excl. XPL/Merit rewards" }
+      ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.15, asof: "2026-07-26", note: "legs (26-Jul, USD-weighted): $7.7M sUSDe at the staking yield + $7.8M unstaked USDe at 1.15% supply, vs $13.4M USDT0 debt. Base carry is negative BY DESIGN - the unstaked half earns XPL/sats multipliers instead of staking yield; judge it with points booked" }
       : ch === "mantle"
       ? { L: 7.69, lt: 0.92, live: true, asof: "2026-07-25", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization - the borrow rate swings hard around the kink, so this net flips sign with it" }
-      : { L: 6.84, lt: 0.92, live: true, sMix: 0.65, sOther: 1.36, asof: "2026-07-25", note: "collateral ~65/35 sUSDe + unstaked USDe; excl. Merit/sats" };
+      : { L: 6.84, lt: 0.92, live: true, sMix: 0.74, sOther: 1.45, asof: "2026-07-26", note: "legs (26-Jul, USD-weighted): $8.8M sUSDe earning the staking yield + $3.1M unstaked USDe earning 1.45% supply, vs $10.2M USDT debt. The unstaked-USDe slice exists for points multipliers; excl. Merit/sats" };
     const bK2 = ch === "plasma" ? "usdt0Plasma" : ch === "mantle" ? "usdt0Mantle" : "aaveUSDT";
     return loop(ctx.sUSDe, "sUSDe", b(bK2), ch === "mantle" ? "USDT0 borrow (Mantle)" : ch === "plasma" ? "USDT0 borrow (Plasma)" : "USDT borrow (Aave)", meas, bK2); }
   if (/sparklend usdc/i.test(L)) return rate(ctx.sparkUSDC, "SparkLend USDC supply rate, live", "SparkLend USDC");
@@ -729,7 +727,8 @@ function yieldCell(y, pct) {
       `<br>s = ${sEff.toFixed(2)}% ${y.sLbl}${m.sMix != null ? " (blended for the collateral mix)" : ""} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(sEff - y.b >= 0 ? "+" : "") + (sEff - y.b).toFixed(2)}pp/turn` +
       (m.note ? `<br>${m.note}` : "") +
       `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
-    return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${esc(tip)}">${net.toFixed(2)}% @${m.L}×</span>`;
+    const pts = m.note && /points|sats|XPL|Merit/i.test(m.note) ? ' <span style="color:var(--muted);font-size:10.5px">+pts</span>' : "";
+    return `<span class="yld${net < 0 ? " neg" : ""}" data-tip="${esc(tip)}">${net.toFixed(2)}% @${m.L}×</span>` + pts;
   }
   const Lv = LOOP_LEV === "m" ? 3 : LOOP_LEV, net = y.s * Lv - y.b * (Lv - 1);
   const tip = `s = ${y.s.toFixed(2)}% ${y.sLbl} · b = ${y.b.toFixed(2)}% ${y.bLbl}` +

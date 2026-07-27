@@ -141,11 +141,6 @@
     <div class="skel">Reading the chain&hellip; first scan takes 10&ndash;25 seconds.</div>
   </div>
 
-  <h2>Method</h2>
-  <p class="meth">
-    Mint from <code>0x0</code> = settled deposit (fee mints to the treasury excluded). Burn to <code>0x0</code> = the redeem queue settling settlements are batch transactions executed by vault operations, so they say nothing about who redeemed. Requester-level flow comes from share transfers into the queue; depositor-level from mint forwarding. Shares are valued at the current share price. Logs pulled client-side in &le;9,900-block chunks from public RPCs; a coverage figure appears if any range failed. Numbers exclude requests still pending in the queue.
-  </p>
-
   <footer>
     Client-side, keyless, nothing stored. Requires a connection (on-chain reads). Companion pages: <a href="index.html">overview</a> &middot; <a href="portfolio.html">portfolio</a> &middot; <a href="competitors.html">competitors</a>.
   </footer>

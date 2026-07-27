@@ -561,14 +561,12 @@ function barChart(el, rows, benchmarks, tableEl) {
   });
 }
 function compTable(el, rows, bench) {
-  let h = `<table><tr><th></th><th>Vault</th><th class="num">Net APY</th><th class="num">30d mean</th><th class="num">Spread</th><th class="num">&sigma; 90d</th><th class="num">Spread/&sigma;</th><th class="num">TVL</th></tr>`;
+  let h = `<table><tr><th></th><th>Vault</th><th class="num">Net APY</th><th class="num">30d mean</th><th class="num">&sigma; 90d</th><th class="num">TVL</th></tr>`;
   rows.forEach((r, ri) => {
     const sp = r.apy - bench, sh = r.sigma ? sp / r.sigma : null;
     h += `<tr class="pick${r.lido ? " lido" : ""}" data-name="${r.name}"><td class="rank">${String(ri + 1).padStart(2, "0")}</td><td><span class="caret"></span>${r.name}</td>` +
       `<td class="num">${r.apy.toFixed(2)}%</td><td class="num">${r.m30 != null ? r.m30.toFixed(2) + "%" : "—"}</td>` +
-      `<td class="num" style="color:${sp >= 0 ? "var(--good)" : "var(--crit)"}">${pp(sp)}</td>` +
-      `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td>` +
-      `<td class="num">${sh != null ? sh.toFixed(1) : "—"}</td><td class="num">${fmt$(r.tvl)}</td></tr>`;
+      `<td class="num">${r.sigma != null ? r.sigma.toFixed(2) : "—"}</td><td class="num">${fmt$(r.tvl)}</td></tr>`;
   });
   el.innerHTML = h + "</table>";
   el.querySelectorAll("tr.pick").forEach(tr => tr.addEventListener("click", () => toggleDetail(tr)));
