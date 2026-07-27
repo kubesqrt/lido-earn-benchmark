@@ -921,7 +921,15 @@ function posLabel(r) {
   // earnUSD allocates through two internal Mellow sub-vaults ("sleeves"):
   // earnUSDc = conservative unlevered sleeve, earnUSDe = enhanced levered sleeve.
   const SLEEVE = { earnUSDc: "conservative sleeve", earnUSDe: "levered sleeve" };
+  // show BOTH sides of the trade where the label doesn't already carry the pair
+  const PAIR = [
+    [/aave plasma levered ethena/i, "sUSDe + USDe vs USDT0"],
+    [/aave mantle levered ethena/i, "sUSDe vs USDT0"],
+    [/^aave levered ethena/i, "sUSDe + USDe vs USDT"],
+    [/aave levered wsteth\/usd/i, "wstETH vs USDe (94%) + USDT"],
+  ];
   let l = r.label.replace(/ · Lido stRATEGY$/i, "");
+  for (const [re2, pair] of PAIR) if (re2.test(l) && !/ vs /.test(l)) { l = l.replace(re2, m => m + ' <span style="color:var(--ink-2);font-weight:400">' + pair + "</span>"); break; }
   l = l.replace(/^(ERC20|None)( · |$)/i, "Unlabeled dust (Mellow)$2");
   return l.replace(/ · (earnUSD[ce])$/i, (m, g) =>
     ` <span class="sub2" title="${g} is an internal Mellow sub-vault of earnUSD - the ${SLEEVE[g] || "sleeve"} this position sits in">${SLEEVE[g] || g} · ${g}</span>`);
