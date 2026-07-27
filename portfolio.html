@@ -708,7 +708,9 @@ function yieldEst(row, vault, ctx) {
   if (/syrupusdt\/usdt0/i.test(L)) return loop(ctx.syrupUSDT, "syrupUSDT", b(ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma"), `USDT0 borrow (${ch})`, { L: 8.85, lt: 0.92, live: true, asof: "2026-07-24", base: { d: "2026-07-18", L: 6.56, net: 4.30 } }, ch === "mantle" ? "usdt0Mantle" : "usdt0Plasma");
   if (/levered ethena/i.test(L)) {
     const meas = ch === "plasma"
-      ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.15, asof: "2026-07-26", note: "legs (26-Jul, USD-weighted): $7.7M sUSDe at the staking yield + $7.8M unstaked USDe at 1.15% supply, vs $13.4M USDT0 debt. Base carry is negative BY DESIGN - the unstaked half earns XPL/sats multipliers instead of staking yield; judge it with points booked" }
+      ? { L: 7.66, lt: 0.92, live: true, sMix: 0.50, sOther: 1.15, asof: "2026-07-27",
+          em: { c: 1.00, d: 0.5547 },
+          note: "legs (27-Jul, on-chain): $7.7M sUSDe at staking yield + $7.8M unstaked USDe at 1.15% supply vs $13.4M USDT0 at 3.88% = base ~-6%. On top: REALIZED Merkl emissions ~1.0%/yr of collateral (measured from this subvault's own claim history, NOT the 2.9% headline APR) + 0.55% borrow rebate (campaign ends 23 Aug); $44.8K claimed to date, paid in aTokens. Excluded: Ethena sats points. Reverts to ~-6% if the weekly campaigns stop" }
       : ch === "mantle"
       ? { L: 7.69, lt: 0.92, live: true, asof: "2026-07-25", note: "excl. MNT rewards; the Mantle USDT0 market runs ~96% utilization - the borrow rate swings hard around the kink, so this net flips sign with it" }
       : { L: 6.84, lt: 0.92, live: true, sMix: 0.74, sOther: 1.45, asof: "2026-07-26", note: "legs (26-Jul, USD-weighted): $8.8M sUSDe earning the staking yield + $3.1M unstaked USDe earning 1.45% supply, vs $10.2M USDT debt. The unstaked-USDe slice exists for points multipliers; excl. Merit/sats" };
@@ -738,9 +740,12 @@ function yieldCell(y, pct) {
   if (LOOP_LEV === "m" && y.meas) {
     const m = y.meas;
     const sEff = m.sMix != null ? y.s * m.sMix + (m.sOther || 0) * (1 - m.sMix) : y.s;
-    const net = m.live ? (sEff * m.L - y.b * (m.L - 1)) : m.net;   // live carry at the measured leverage
+    const baseNet = m.live ? (sEff * m.L - y.b * (m.L - 1)) : m.net;
+    const emLayer = m.em ? m.em.c * m.L + m.em.d * (m.L - 1) : 0;   // realized claimable emissions (verified from claim history)
+    const net = baseNet + emLayer;
     const tip = (m.live ? `L = ${m.L}× measured on-chain ${m.asof || "2026-07-24"}; carry computed live from current rates` + (m.base ? `<br>baseline ${m.base.d}: ${m.base.net >= 0 ? "+" : ""}${m.base.net}% @${m.base.L}× - the drift since is real position change, not noise` : "") : `MEASURED on-chain ${m.asof || "2026-07-18"}: L = ${m.L}× (aToken/debt balances; equity matches Mellow API ±0.23%)`) +
       `<br>s = ${sEff.toFixed(2)}% ${y.sLbl}${m.sMix != null ? " (blended for the collateral mix)" : ""} · b = ${y.b.toFixed(2)}% ${y.bLbl} · carry ${(sEff - y.b >= 0 ? "+" : "") + (sEff - y.b).toFixed(2)}pp/turn` +
+      (m.em ? `<br><b>layers: base ${baseNet.toFixed(1)}% + realized emissions ${emLayer.toFixed(1)}% = ${net.toFixed(1)}% all-in</b>` : "") +
       (m.note ? `<br>${m.note}` : "") +
       `<br>≈ ${(pct * net / 100).toFixed(2)}pp of vault APY (${pct.toFixed(1)}% share)`;
     const pts = m.note && /points|sats|XPL|Merit/i.test(m.note) ? ' <span style="color:var(--muted);font-size:10.5px">+pts</span>' : "";
