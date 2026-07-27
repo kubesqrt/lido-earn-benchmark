@@ -913,8 +913,13 @@ function renderLenses(elId, rows, vault) {
 }
 // display label: drop the repeated subvault suffix; mute the earnUSDc/e tag
 function posLabel(r) {
-  return r.label.replace(/ · Lido stRATEGY$/i, "")
-                .replace(/ · (earnUSD[ce])$/i, ' <span class="sub2">$1</span>');
+  // earnUSD allocates through two internal Mellow sub-vaults ("sleeves"):
+  // earnUSDc = conservative unlevered sleeve, earnUSDe = enhanced levered sleeve.
+  const SLEEVE = { earnUSDc: "conservative sleeve", earnUSDe: "levered sleeve" };
+  let l = r.label.replace(/ · Lido stRATEGY$/i, "");
+  l = l.replace(/^(ERC20|None)( · |$)/i, "Unlabeled dust (Mellow)$2");
+  return l.replace(/ · (earnUSD[ce])$/i, (m, g) =>
+    ` <span class="sub2" title="${g} is an internal Mellow sub-vault of earnUSD - the ${SLEEVE[g] || "sleeve"} this position sits in">${SLEEVE[g] || g} · ${g}</span>`);
 }
 // risk cell: health factor for levered positions (HF = LT·L/(L−1)); otherwise the flag
 // Standalone capacity: what this position could hold if it were the ONLY position we ran.
