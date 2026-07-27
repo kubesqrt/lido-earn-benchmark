@@ -210,7 +210,7 @@ function stats(arr) {
 }
 
 // one pass over all Transfer logs: daily buckets + requester/depositor aggregation
-async function scanVault(cfg, headBlk, secPerBlk, days, price, tvl) {
+async function scanVault(cfg, headBlk, secPerBlk, days, price, tvl, headTs) {
   const fromBlk = headBlk - Math.ceil(days * 86400 / secPerBlk) - 2000;
   const raw = [];
   let okChunks = 0, totChunks = 0;
@@ -235,7 +235,9 @@ async function scanVault(cfg, headBlk, secPerBlk, days, price, tvl) {
   for (const ls of Object.values(byTx)) {
     for (const l of ls) {
       const blk = parseInt(l.blockNumber, 16);
-      const day = Math.floor((headBlk - blk) * secPerBlk / 86400);
+      // bucket by true UTC calendar day (est. timestamp from block distance, anchored to UTC midnight)
+      const ts = headTs - (headBlk - blk) * secPerBlk;
+      const day = Math.floor(headTs / 86400) - Math.floor(ts / 86400);
       const inWin = day >= 0 && day < days;
       const v = parseInt(l.data, 16) / 1e18;
       const f = ("0x" + l.topics[1].slice(26)).toLowerCase();
@@ -314,9 +316,9 @@ function renderVault(key, cfg, data, price, tvl, pend) {
     `<div class="tile usual"><div class="k">Median settlement</div><div class="v out">${money(sr.activeMedian, unit)}</div><div class="d">${sr.active} routine settlements · largest ${money(sr.activeMax, unit)}</div></div>` +
     `<div class="tile usual"><div class="k">Median deposit day</div><div class="v inn">${money(si.activeMedian, unit)}</div><div class="d">${si.active}/${days} days with deposits</div></div>` +
     `<div class="tile net"><div class="k">Net flow · ${WIN}d</div><div class="v ${sn.total>=0?'pos':'neg'}">${sn.total>=0?'+':'−'}${money(Math.abs(sn.total), unit)}</div><div class="d">in ${money(si.total, unit)} · out ${money(so.total, unit)}</div></div>` +
-    `<div class="tile"><div class="k">In withdrawal queue now</div><div class="v">${pend != null ? money(toV(pend), unit) : "—"}</div><div class="d">${pend != null && usdOK ? pctTvl(pend).toFixed(2) + "% of TVL · settles at the next report" : "pending redemption requests"}</div></div>` +
+    `<div class="tile"><div class="k">In withdrawal queue now</div><div class="v">${pend != null ? money(toV(pend), unit) : "—"}</div><div class="d">${pend != null && usdOK ? pctTvl(pend).toFixed(2) + "% of current TVL · settles at the next report" : "pending redemption requests"}</div></div>` +
     (biggest
-      ? `<div class="tile block"><div class="k">Largest settlement</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d">${pctTvl(biggest.shares).toFixed(1)}% of TVL · ${(data.series[data.series.length - 1 - biggest.day] || {}).full || ""}</div></div>`
+      ? `<div class="tile block"><div class="k">Largest settlement</div><div class="v blk">${money(toV(biggest.shares), unit)}</div><div class="d">${pctTvl(biggest.shares).toFixed(1)}% of current TVL · ${(data.series[data.series.length - 1 - biggest.day] || {}).full || ""}</div></div>`
       : `<div class="tile block"><div class="k">Settlements ≥1% TVL</div><div class="v">${usdOK ? "0" : "—"}</div><div class="d">${usdOK ? "none in window" : "needs the TVL feed"}</div></div>`) +
     `</div>`;
 
@@ -337,7 +339,7 @@ function renderVault(key, cfg, data, price, tvl, pend) {
   const note = !usdOK
     ? `<p class="flownote">Mellow API unreachable USD valuation and TVL-relative analysis disabled; flows shown in ${unit} share units.</p>`
     : biggest
-    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of TVL)</b> which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
+    ? `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. The binding case is the largest settlement <b>${money(toV(biggest.shares), unit)} (${pctTvl(biggest.shares).toFixed(1)}% of current TVL)</b> which is absorbed by the redemption SLA and unwind capacity, not the buffer.</p>`
     : `<p class="flownote">A 5% buffer (${fmtUsd(buf5)}) covers the median settlement <b>${sr.activeMedian>0?Math.round(buf5/(sr.activeMedian*(useUsd?1:price)))+"×":"—"}</b> over. No settlement exceeded 1% of TVL in this window.</p>`;
 
   const rows = data.series.map((d, i) => {
@@ -415,7 +417,7 @@ async function priceAndTvl(cfg) {
   return { price, tvl: tvl || null, pend, ethPrice };
 }
 function dayMeta(headTs, dayAgo) {
-  const d = new Date((headTs - dayAgo * 86400) * 1000);
+  const d = new Date((Math.floor(headTs / 86400) - dayAgo) * 86400 * 1000);
   const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getUTCMonth()];
   return { label: `${d.getUTCDate()} ${mo}`, full: `${d.getUTCDate()} ${mo} ${d.getUTCFullYear()}` };
 }
@@ -465,7 +467,7 @@ async function run() {
   let anyOk = false;
   for (const key of Object.keys(SHARE)) {
     const cfg = SHARE[key], { price, tvl } = pt[key];
-    const d = await scanVault(cfg, headBlk, secPerBlk, WIN, price, tvl);
+    const d = await scanVault(cfg, headBlk, secPerBlk, WIN, price, tvl, headTs);
     const series = [];
     for (let day = WIN - 1; day >= 0; day--) {
       const m = dayMeta(headTs, day);
